@@ -50,18 +50,9 @@
   <label>Höhe Y: <input id="camHeight" type="range" min="1" max="50" step="1" value="10"></label><br>
   <label>Distanz: <input id="camDist" type="range" min="5" max="50" step="1" value="15"></label><br>
   <label>Auto-Rotate Speed: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.0005"></label><br>
-  <label>Licht mit Schatten:
-    <select id="shadowToggle">
-      <option value="true">An</option>
-      <option value="false">Aus</option>
-    </select>
-  </label><br>
-  <label>Obstacle:
-    <select id="obstacleToggle">
-      <option value="false">Aus</option>
-      <option value="true">An</option>
-    </select>
-  </label>
+<button id="toggleLight" style="left: 60px;">💡 Licht</button>
+<button id="toggleObstacle" style="left: 120px;">🧱 Obstacle</button>
+<button id="toggleArrow" style="left: 160px;">➡️ Pfeil</button>
 </div>
 
 <script>
@@ -75,12 +66,34 @@ let camHeight = 10;
 let light, shadowEnabled = false;
 let obstacleEnabled = false;
 let obstacleMesh = null;
-
+let directionalLight, ambientLight;
+let arrowHelper = null;
+let arrowVisible = true;
 const personModel = createPersonModel();
 
 init();
 
 function init() {
+
+  document.getElementById("toggleLight").addEventListener("click", () => {
+  const isDir = directionalLight.visible;
+  directionalLight.visible = !isDir;
+  ambientLight.visible = isDir;
+
+  arrowHelper.visible = directionalLight.visible && arrowVisible;
+
+  document.getElementById("toggleLight").style.background = directionalLight.visible ? "#ccf" : "#cfc";
+});
+
+document.getElementById("toggleArrow").addEventListener("click", () => {
+  arrowVisible = !arrowVisible;
+  arrowHelper.visible = arrowVisible && directionalLight.visible;
+
+  document.getElementById("toggleArrow").style.background = arrowVisible ? "#fc6" : "#ccc";
+});
+  document.getElementById("toggleLight").style.background = shadowEnabled ? "#6c6" : "#ccc";
+document.getElementById("toggleObstacle").style.background = obstacleEnabled ? "#c66" : "#ccc";
+
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf0f0f0);
 
@@ -92,17 +105,32 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(20, 30, 20);
-  light.castShadow = false;
-  scene.add(light);
-  scene.add(new THREE.AmbientLight(0x888888));
+// Directional Light
+directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(20, 30, 20);
+directionalLight.castShadow = shadowEnabled;
+scene.add(directionalLight);
 
-  const ground = new THREE.Mesh(
+// Ambient Light (zunächst deaktiviert)
+ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+ambientLight.visible = true;
+scene.add(ambientLight);
+
+// Pfeil zur Lichtquelle
+arrowHelper = new THREE.ArrowHelper(
+  directionalLight.position.clone().normalize(),
+  new THREE.Vector3(0, 0, 0),
+  5,
+  0xffaa00,
+  1,
+  0.5
+);
+scene.add(arrowHelper);
+ const ground = new THREE.Mesh(
     new THREE.BoxGeometry(boxSize, 0.1, boxSize),
     new THREE.MeshStandardMaterial({ color: 0xcccccc })
   );
-  ground.position.y = -0.05;
+  //ground.position.y = -0.05;
   scene.add(ground);
 
   personGroup = new THREE.Group();
@@ -123,15 +151,7 @@ function init() {
     rotateSpeed = parseFloat(e.target.value);
     autoRotate = rotateSpeed > 0;
   });
-  document.getElementById("shadowToggle").addEventListener("change", e => {
-    shadowEnabled = e.target.value === "true";
-    light.castShadow = shadowEnabled;
-  });
-  document.getElementById("obstacleToggle").addEventListener("change", e => {
-    obstacleEnabled = e.target.value === "true";
-    updateObstacle();
-    updatePeople(lastCount);
-  });
+
 
   document.getElementById("toggleSettings").addEventListener("click", () => {
     const panel = document.getElementById("settingsPanel");
@@ -276,6 +296,18 @@ window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+
+
+document.getElementById("toggleObstacle").addEventListener("click", () => {
+  obstacleEnabled = !obstacleEnabled;
+  document.getElementById("toggleObstacle").style.background = obstacleEnabled ? "#c66" : "#ccc";
+  updateObstacle();
+  let lastlastCount = lastCount
+  updatePeople(0)
+
+  updatePeople(lastlastCount); // neu berechnen
 });
 </script>
 
