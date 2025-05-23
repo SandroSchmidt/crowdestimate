@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Personen mit Armen & Beinen – Three.js</title>
+  <title>Personen mit Hindernis – Three.js</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; }
     #sliderContainer {
@@ -49,11 +49,17 @@
 <div id="settingsPanel">
   <label>Höhe Y: <input id="camHeight" type="range" min="1" max="50" step="1" value="10"></label><br>
   <label>Distanz: <input id="camDist" type="range" min="5" max="50" step="1" value="15"></label><br>
-  <label>Auto-Rotate Speed: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.001"></label><br>
+  <label>Auto-Rotate Speed: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.0005"></label><br>
   <label>Licht mit Schatten:
     <select id="shadowToggle">
       <option value="true">An</option>
       <option value="false">Aus</option>
+    </select>
+  </label><br>
+  <label>Obstacle:
+    <select id="obstacleToggle">
+      <option value="false">Aus</option>
+      <option value="true">An</option>
     </select>
   </label>
 </div>
@@ -67,6 +73,8 @@ let rotateSpeed = 0.0005;
 let camRadius = 15;
 let camHeight = 10;
 let light, shadowEnabled = false;
+let obstacleEnabled = false;
+let obstacleMesh = null;
 
 const personModel = createPersonModel();
 
@@ -85,10 +93,10 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(20, 30, 50);
-  light.castShadow = true;
+  light.position.set(20, 30, 20);
+  light.castShadow = false;
   scene.add(light);
-  //scene.add(new THREE.AmbientLight(0x888888));
+  scene.add(new THREE.AmbientLight(0x888888));
 
   const ground = new THREE.Mesh(
     new THREE.BoxGeometry(boxSize, 0.1, boxSize),
@@ -100,7 +108,7 @@ function init() {
   personGroup = new THREE.Group();
   scene.add(personGroup);
 
-  // UI
+  // UI-Events
   d3.select("#slider").on("input", function () {
     updatePeople(+this.value);
   });
@@ -119,6 +127,11 @@ function init() {
     shadowEnabled = e.target.value === "true";
     light.castShadow = shadowEnabled;
   });
+  document.getElementById("obstacleToggle").addEventListener("change", e => {
+    obstacleEnabled = e.target.value === "true";
+    updateObstacle();
+    updatePeople(lastCount);
+  });
 
   document.getElementById("toggleSettings").addEventListener("click", () => {
     const panel = document.getElementById("settingsPanel");
@@ -126,6 +139,24 @@ function init() {
   });
 
   animate();
+}
+
+function updateObstacle() {
+  if (obstacleMesh) {
+    scene.remove(obstacleMesh);
+    obstacleMesh = null;
+  }
+
+  if (obstacleEnabled) {
+    const size = 3;
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(size, 3, size),
+      new THREE.MeshStandardMaterial({ color: 0x333333 })
+    );
+    box.position.set(0, 0.5, 0);
+    scene.add(box);
+    obstacleMesh = box;
+  }
 }
 
 function createPersonModel() {
@@ -198,7 +229,12 @@ function createSinglePerson() {
       return Math.sqrt(dx * dx + dz * dz) < minDistance;
     });
 
-    if (!tooClose) placed = true;
+    let insideObstacle = false;
+    if (obstacleEnabled) {
+      insideObstacle = Math.abs(px) < 2 && Math.abs(pz) < 2; // Block ist 2x2m in der Mitte
+    }
+
+    if (!tooClose && !insideObstacle) placed = true;
     attempts++;
   }
 
@@ -242,5 +278,6 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
+
 </body>
 </html>
