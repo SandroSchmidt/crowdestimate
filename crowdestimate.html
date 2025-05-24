@@ -47,6 +47,7 @@
   z-index: 100;
 }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -85,11 +86,7 @@
   <label>Count: <input id="slider" type="range" min="0" max="250" value="0"></label>
   <span id="personCountDisplay">1 Person</span>
 </div>
-<script type="module">
-import * as THREE from 'https://cdn.skypack.dev/three@0.149.0';
-import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.149.0/examples/jsm/loaders/GLTFLoader.js';
-
-
+<script>
 let scene, camera, renderer, personGroup;
 const boxSize = 10;
 let lastCount = 0;
