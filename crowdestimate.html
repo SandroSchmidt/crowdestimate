@@ -48,6 +48,7 @@
 }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
@@ -83,6 +84,7 @@
 </div>
 <div id="sliderContainer">
   <label>Count: <input id="slider" type="range" min="0" max="250" value="0"></label>
+  <span id="personCountDisplay">1 Person</span>
 </div>
 <script>
 let scene, camera, renderer, personGroup;
@@ -105,6 +107,11 @@ let obstacleHeight = 1;
 let currentLightMode = "ambient";
 let discoLight = null;
 let discoActive = false;
+
+
+let personModel;
+
+
 init();
 updatePeople(1)
 
@@ -113,7 +120,7 @@ function updateDensityDisplay(count) {
   const obstacleArea = obstacleEnabled ? obstacleSize * obstacleSize : 0;
   const availableArea = totalArea - obstacleArea;
   const density = availableArea > 0 ? (count / availableArea).toFixed(2) : "∞";
-  document.getElementById("densityDisplay").innerText = `${density} Personen/m²`;
+  document.getElementById("densityDisplay").innerText = `${density} Persons/m²`;
 }
 
 function init() {
@@ -198,9 +205,12 @@ scene.add(mainGround);
   scene.add(personGroup);
 
   // UI-Events
-  d3.select("#slider").on("input", function () {
-    updatePeople(+this.value);
-  });
+ d3.select("#slider").on("input", function () {
+  const val = +this.value;
+  updatePeople(val);
+  d3.select("#personCountDisplay").text(`${val} Persons`);
+});
+
 
   document.getElementById("camHeight").addEventListener("input", e => {
     camHeight = parseFloat(e.target.value);
