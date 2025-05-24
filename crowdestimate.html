@@ -48,10 +48,10 @@
 }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+
 <div id="densityDisplay">Persons/m²</div>
 
 
@@ -81,11 +81,21 @@
 <label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
 <hr>
 
+<button onclick="startDensityQuiz()" class="btn">🎯 Estimate Random Density</button>
+
 </div>
 <div id="sliderContainer">
   <label>Count: <input id="slider" type="range" min="0" max="250" value="0"></label>
   <span id="personCountDisplay">1 Person</span>
 </div>
+<div id="quizContainer" style="display:none; position:absolute; top:90%; left:50%; transform:translate(-50%,-50%);
+ background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
+  <p><strong>Estimate Density (Persons/m²):</strong></p>
+  <input type="number" id="densityGuess" step="0.1" min="0.1" max="2.5" placeholder="eg.   1.23">
+  <button onclick="submitDensityGuess()">Submit</button>
+  <p id="quizFeedback"></p>
+</div>
+
 <script>
 let scene, camera, renderer, personGroup;
 const boxSize = 10;
@@ -107,13 +117,12 @@ let obstacleHeight = 1;
 let currentLightMode = "ambient";
 let discoLight = null;
 let discoActive = false;
-
-
-let personModel;
+let originalBackground = null;
 
 
 init();
 updatePeople(1)
+
 
 function updateDensityDisplay(count) {
   const totalArea = boxSize * boxSize;
@@ -244,6 +253,71 @@ document.getElementById("avgHeight").addEventListener("input", e => {
 
   animate();
 }
+function startDensityQuiz() {
+  // UI ausblenden
+  document.getElementById("settingsPanel").style.display = "none";
+  document.getElementById("sliderContainer").style.display = "none";
+  document.getElementById("densityDisplay").style.display = "none";
+  // Zufällige Personenzahl und Lichtmodus wählen
+  const randomCount = Math.floor(20 + Math.random() * 200);
+  const lightModes = ["ambient", "directional", "disco"];
+  const randomMode = lightModes[Math.floor(Math.random() * lightModes.length)];
+
+  setLightMode(randomMode);
+  updatePeople(0); // alle entfernen
+  updatePeople(randomCount); // neue setzen
+// Original-Hintergrund merken
+  originalBackground = scene.background;
+
+  // Zufallsbild 1.jpg bis 8.jpg
+  const randomIndex = Math.floor(Math.random() * 8) + 1;
+  const bgPath = `${randomIndex}.jpg`;
+
+  // Bild laden und setzen
+  const loader = new THREE.TextureLoader();
+loader.load('./img/'+randomIndex+'.jpg', function(texture) {
+  scene.background = texture;
+});
+
+  // Quiz anzeigen
+  document.getElementById("quizContainer").style.display = "block";
+  document.getElementById("densityGuess").value = "";
+  document.getElementById("quizFeedback").textContent = "";
+}
+
+function submitDensityGuess() {
+  const guess = parseFloat(document.getElementById("densityGuess").value);
+  const totalArea = boxSize * boxSize;
+  const obstacleArea = obstacleEnabled ? obstacleSize * obstacleSize : 0;
+  const availableArea = totalArea - obstacleArea;
+  const trueDensity = availableArea > 0 ? (lastCount / availableArea) : Infinity;
+
+  const error = Math.abs(guess - trueDensity);
+  const feedback = document.getElementById("quizFeedback");
+
+  if (isNaN(guess)) {
+    feedback.textContent = "Bitte eine gültige Zahl eingeben.";
+    feedback.style.color = "red";
+    return;
+  }
+
+  if (error < 0.3) {
+    feedback.textContent = `Good! The Exact value is ${trueDensity.toFixed(2)}.`;
+    feedback.style.color = "green";
+  } else {
+    feedback.textContent = `Incorrect! The Exact value is  ${trueDensity.toFixed(2)}.`;
+    feedback.style.color = "orange";
+  }
+
+  setTimeout(() => {
+    // UI wieder anzeigen
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("settingsPanel").style.display = "block";
+    document.getElementById("sliderContainer").style.display = "block";
+      document.getElementById("densityDisplay").style.display = "block";
+       scene.background = originalBackground;
+  }, 1000);
+}
 
 function setLightMode(mode) {
   currentLightMode = mode;
@@ -301,7 +375,12 @@ function createPersonModel() {
   const totalHeight = avgPersonHeight * (1 + (Math.random() * 0.2 - 0.1));
 
   // Zufällige Farbe für Kleidung
-  const clothingColor = new THREE.Color(Math.random(), Math.random(), Math.random());
+
+  
+   // Feste Farben zur Auswahl
+  const clothingColors = ["white", "white", "white","lime","beige", "black", "steelblue", "green"];
+  const randomColor = clothingColors[Math.floor(Math.random() * clothingColors.length)];
+  const clothingColor = new THREE.Color(randomColor);
   const bodyMaterial = new THREE.MeshStandardMaterial({ color: clothingColor });
   const armMaterial = new THREE.MeshStandardMaterial({ color: clothingColor });
 
@@ -322,18 +401,25 @@ function createPersonModel() {
   group.add(legRight);
 
   // Körper
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, bodyHeight, 12), bodyMaterial);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, bodyHeight, 12), bodyMaterial);
   body.position.y = legHeight + bodyHeight / 2;
   group.add(body);
 
   // Kopf
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(headRadius, 12, 12),
-    new THREE.MeshStandardMaterial({ color: 0xdb9c37 })
+    new THREE.MeshStandardMaterial({ color: 0x9c6110 })
   );
   head.position.y = legHeight + bodyHeight + headRadius;
   group.add(head);
-
+  // Haare (schwarze Halbkugel oben auf dem Kopf)
+  const hairGeometry = new THREE.SphereGeometry(headRadius * 0.9, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  const hairMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+  const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+  hair.position.y = head.position.y + headRadius * 0.35; // etwas höher als der Kopfmittelpunkt
+   hair.rotation.z = Math.PI/3;
+     hair.rotation.y = Math.PI/2;
+  group.add(hair);
   // Arme
   const armLength = bodyHeight * 0.75;
   const armLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, armLength, 8), armMaterial);
