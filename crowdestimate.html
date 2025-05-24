@@ -4,63 +4,92 @@
   <meta charset="UTF-8" />
   <title>Personen mit Hindernis – Three.js</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; }
-    #sliderContainer {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.9);
-      padding: 10px;
-      border-radius: 8px;
-    }
-    #settingsPanel {
-      position: absolute;
-      top: 50px;
-      left: 10px;
-      background: #eee;
-      padding: 10px;
-      border-radius: 5px;
-      display: none;
-    }
-    .btn {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-      padding: 6px 10px;
-      background: #ccc;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+   body { margin: 0; overflow: hidden; font-family: sans-serif; }
+  #sliderContainer {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.9);
+    padding: 10px;
+    border-radius: 8px;
+  }
+  #settingsPanel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20%;
+    height: 100%;
+    background: #eee;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  .btn {
+    display: inline-block;
+    margin: 5px 5px 5px 0;
+    padding: 6px 10px;
+    background: #ccc;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #densityDisplay {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.9);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 18px;
+  z-index: 100;
+}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+<div id="densityDisplay">0.01 Personen/m²</div>
 
-<div id="sliderContainer">
-  <label>Personenzahl: <input id="slider" type="range" min="0" max="250" value="0"></label>
-</div>
 
-<button id="toggleSettings" class="btn">⚙️</button>
+
 
 <div id="settingsPanel">
-  <label>Höhe Y: <input id="camHeight" type="range" min="1" max="50" step="1" value="10"></label><br>
+  <p><u>Camera Settings:</u></p>
+  <label>Position: <input id="camHeight" type="range" min="1" max="50" step="1" value="10"></label><br>
+ <!-- 
   <label>Distanz: <input id="camDist" type="range" min="5" max="50" step="1" value="15"></label><br>
-  <label>Auto-Rotate Speed: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.0005"></label><br>
-<button id="toggleLight" style="left: 60px;">💡 Licht</button>
-<button id="toggleObstacle" style="left: 120px;">🧱 Obstacle</button>
-<button id="toggleArrow" style="left: 160px;">➡️ Pfeil</button>
-</div>
+ --> 
+  <label>Rotate: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.0005"></label><br>
+   <hr>
+    <p><u>Light Settings:</u></p>
+<button id="btnAmbient" class="btn">💡 Ambient</button>
+<button id="btnDirectional" class="btn">🔦 Directional</button>
+<button id="btnDisco" class="btn">🌈 Disco</button>
+<button id="toggleArrow" class="btn">➡️ Direction</button>
+<hr>
+<p><u>Obstacle Settings:</u></p>
+<button id="toggleObstacle" style="left: 120px;">🧱 on/off</button>
+<button id="changeObstacleColor" class="btn">🎨</button><br>
+<label>Size (m): <input id="obstacleSize" type="number" min="1" max="5" step="0.1" value="3"></label><br>
+<label>Height (m): <input id="obstacleHeight" type="number" min="0.25" max="5" step="0.25" value="1"></label><br>
+<hr>
+<p><u>Persons Settings:</u></p>
+<label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
+<hr>
 
+</div>
+<div id="sliderContainer">
+  <label>Count: <input id="slider" type="range" min="0" max="250" value="0"></label>
+</div>
 <script>
 let scene, camera, renderer, personGroup;
 const boxSize = 10;
 let lastCount = 0;
 let autoRotate = true;
-let rotateSpeed = 0.0005;
+let rotateSpeed = 0.0001;
 let camRadius = 15;
 let camHeight = 10;
 let light, shadowEnabled = false;
@@ -69,21 +98,43 @@ let obstacleMesh = null;
 let directionalLight, ambientLight;
 let arrowHelper = null;
 let arrowVisible = true;
-const personModel = createPersonModel();
-
+let obstacleColor = "steelblue";
+let obstacleSize = 3;
+let avgPersonHeight = 1.78;
+let obstacleHeight = 1;
+let currentLightMode = "ambient";
+let discoLight = null;
+let discoActive = false;
 init();
+updatePeople(1)
+
+function updateDensityDisplay(count) {
+  const totalArea = boxSize * boxSize;
+  const obstacleArea = obstacleEnabled ? obstacleSize * obstacleSize : 0;
+  const availableArea = totalArea - obstacleArea;
+  const density = availableArea > 0 ? (count / availableArea).toFixed(2) : "∞";
+  document.getElementById("densityDisplay").innerText = `${density} Personen/m²`;
+}
 
 function init() {
 
-  document.getElementById("toggleLight").addEventListener("click", () => {
-  const isDir = directionalLight.visible;
-  directionalLight.visible = !isDir;
-  ambientLight.visible = isDir;
-
-  arrowHelper.visible = directionalLight.visible && arrowVisible;
-
-  document.getElementById("toggleLight").style.background = directionalLight.visible ? "#ccf" : "#cfc";
+  document.getElementById("btnAmbient").addEventListener("click", () => {
+  setLightMode("ambient");
 });
+document.getElementById("btnDirectional").addEventListener("click", () => {
+  setLightMode("directional");
+});
+document.getElementById("btnDisco").addEventListener("click", () => {
+  setLightMode("disco");
+});
+
+document.getElementById("obstacleHeight").addEventListener("input", e => {
+  obstacleHeight = parseFloat(e.target.value);
+  if (obstacleEnabled) {
+    updateObstacle();
+  }
+});
+
 
 document.getElementById("toggleArrow").addEventListener("click", () => {
   arrowVisible = !arrowVisible;
@@ -91,7 +142,7 @@ document.getElementById("toggleArrow").addEventListener("click", () => {
 
   document.getElementById("toggleArrow").style.background = arrowVisible ? "#fc6" : "#ccc";
 });
-  document.getElementById("toggleLight").style.background = shadowEnabled ? "#6c6" : "#ccc";
+
 document.getElementById("toggleObstacle").style.background = obstacleEnabled ? "#c66" : "#ccc";
 
   scene = new THREE.Scene();
@@ -126,12 +177,22 @@ arrowHelper = new THREE.ArrowHelper(
   0.5
 );
 scene.add(arrowHelper);
- const ground = new THREE.Mesh(
-    new THREE.BoxGeometry(boxSize, 0.1, boxSize),
-    new THREE.MeshStandardMaterial({ color: 0xcccccc })
-  );
-  //ground.position.y = -0.05;
-  scene.add(ground);
+// Boden mit Außenstreifen
+const outerSize = boxSize + 2; // 1m umlaufender Rand
+
+const outerGround = new THREE.Mesh(
+  new THREE.BoxGeometry(outerSize, 0.1, outerSize),
+  new THREE.MeshStandardMaterial({ color: "lightgrey" }) // Randfarbe
+);
+outerGround.position.y = -0.11;
+scene.add(outerGround);
+
+const mainGround = new THREE.Mesh(
+  new THREE.BoxGeometry(boxSize, 0.1, boxSize),
+  new THREE.MeshStandardMaterial({ color: "grey" }) // Innenfarbe
+);
+mainGround.position.y = -0.1
+scene.add(mainGround);
 
   personGroup = new THREE.Group();
   scene.add(personGroup);
@@ -144,21 +205,67 @@ scene.add(arrowHelper);
   document.getElementById("camHeight").addEventListener("input", e => {
     camHeight = parseFloat(e.target.value);
   });
-  document.getElementById("camDist").addEventListener("input", e => {
-    camRadius = parseFloat(e.target.value);
-  });
+  //  document.getElementById("camDist").addEventListener("input", e => {    camRadius = parseFloat(e.target.value);  });
   document.getElementById("rotateSpeed").addEventListener("input", e => {
     rotateSpeed = parseFloat(e.target.value);
     autoRotate = rotateSpeed > 0;
   });
+document.getElementById("changeObstacleColor").addEventListener("click", () => {
+  obstacleColor = Math.floor(Math.random() * 0xffffff);
+  updateObstacle();
+});
 
+document.getElementById("obstacleSize").addEventListener("input", e => {
+  obstacleSize = parseFloat(e.target.value);
+  if (obstacleEnabled) {
+    updateObstacle();
+    updatePeople(lastCount); // neu platzieren wegen neuer Fläche
+    updateDensityDisplay(lastCount);
+  }
+});
 
-  document.getElementById("toggleSettings").addEventListener("click", () => {
-    const panel = document.getElementById("settingsPanel");
-    panel.style.display = panel.style.display === "none" ? "block" : "none";
-  });
+document.getElementById("avgHeight").addEventListener("input", e => {
+  avgPersonHeight = parseFloat(e.target.value);
+  let lastlastCount = lastCount
+  updatePeople(0);              // alle Personen entfernen
+  updatePeople(lastlastCount);      // gleich viele neue erzeugen
+});
+
 
   animate();
+}
+
+function setLightMode(mode) {
+  currentLightMode = mode;
+if (mode === "ambient") {
+  ambientLight.intensity = 0.8;
+  ambientLight.visible = true;
+  directionalLight.visible = true;
+  arrowHelper.visible = false;
+} else {
+  ambientLight.intensity = 0.2;
+  ambientLight.visible = true;
+}
+  directionalLight.visible = mode === "directional";
+  arrowHelper.visible = (mode === "directional") && arrowVisible;
+
+  if (discoLight) {
+    scene.remove(discoLight);
+    discoLight = null;
+    discoActive = false;
+  }
+
+ if (mode === "disco") {
+  discoLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  discoLight.position.copy(directionalLight.position);
+  scene.add(discoLight);
+  discoActive = true;
+}
+
+  // Button-Farben setzen
+  document.getElementById("btnAmbient").style.background = mode === "ambient" ? "#ccf" : "#ccc";
+  document.getElementById("btnDirectional").style.background = mode === "directional" ? "#ccf" : "#ccc";
+  document.getElementById("btnDisco").style.background = mode === "disco" ? "#ccf" : "#ccc";
 }
 
 function updateObstacle() {
@@ -168,52 +275,65 @@ function updateObstacle() {
   }
 
   if (obstacleEnabled) {
-    const size = 3;
     const box = new THREE.Mesh(
-      new THREE.BoxGeometry(size, 3, size),
-      new THREE.MeshStandardMaterial({ color: 0x333333 })
+      new THREE.BoxGeometry(obstacleSize, obstacleHeight, obstacleSize),
+      new THREE.MeshStandardMaterial({ color: obstacleColor })
     );
-    box.position.set(0, 0.5, 0);
+    box.position.set(0, obstacleHeight / 2, 0); // zentriert in y
     scene.add(box);
     obstacleMesh = box;
   }
 }
-
 function createPersonModel() {
   const group = new THREE.Group();
 
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2, 0.25, 0.8, 12),
-    new THREE.MeshStandardMaterial({ color: 0x3366cc })
-  );
-  body.position.y = 1;
+  // Zufällige Höhe ±10 % der Durchschnittshöhe
+  const totalHeight = avgPersonHeight * (1 + (Math.random() * 0.2 - 0.1));
+
+  // Zufällige Farbe für Kleidung
+  const clothingColor = new THREE.Color(Math.random(), Math.random(), Math.random());
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: clothingColor });
+  const armMaterial = new THREE.MeshStandardMaterial({ color: clothingColor });
+
+   // Proportional berechnen
+  const legHeight = totalHeight * 0.45;
+  const bodyHeight = totalHeight * 0.30;
+  const headHeight = totalHeight * 0.2;
+  const headRadius = headHeight / 2;
+  
+  // Beine
+  const legMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  const legLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, legHeight, 8), legMaterial);
+  legLeft.position.set(-0.10, legHeight / 2, 0);
+  group.add(legLeft);
+
+  const legRight = legLeft.clone();
+  legRight.position.x = 0.1;
+  group.add(legRight);
+
+  // Körper
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, bodyHeight, 12), bodyMaterial);
+  body.position.y = legHeight + bodyHeight / 2;
   group.add(body);
 
+  // Kopf
   const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.20, 12, 12),
+    new THREE.SphereGeometry(headRadius, 12, 12),
     new THREE.MeshStandardMaterial({ color: 0xdb9c37 })
   );
-  head.position.y = 1.6;
+  head.position.y = legHeight + bodyHeight + headRadius;
   group.add(head);
 
-  const armMaterial = new THREE.MeshStandardMaterial({ color: 0x3366cc });
-  const armLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8), armMaterial);
-  armLeft.position.set(-0.25, 1.1, 0);
+  // Arme
+  const armLength = bodyHeight * 0.75;
+  const armLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, armLength, 8), armMaterial);
+  armLeft.position.set(-0.25, body.position.y, 0);
   armLeft.rotation.z = Math.PI;
   group.add(armLeft);
 
   const armRight = armLeft.clone();
   armRight.position.x = 0.25;
   group.add(armRight);
-
-  const legMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-  const legLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.8, 8), legMaterial);
-  legLeft.position.set(-0.15, 0.4, 0);
-  group.add(legLeft);
-
-  const legRight = legLeft.clone();
-  legRight.position.x = 0.15;
-  group.add(legRight);
 
   return group;
 }
@@ -230,8 +350,8 @@ function updatePeople(count) {
     }
   }
   lastCount = count;
+  updateDensityDisplay(count);
 }
-
 function createSinglePerson() {
   const minDistance = 0.5;
   let px, pz;
@@ -251,37 +371,33 @@ function createSinglePerson() {
 
     let insideObstacle = false;
     if (obstacleEnabled) {
-      insideObstacle = Math.abs(px) < 2 && Math.abs(pz) < 2; // Block ist 2x2m in der Mitte
+      insideObstacle = Math.abs(px) < obstacleSize / 2 && Math.abs(pz) < obstacleSize / 2;
     }
 
     if (!tooClose && !insideObstacle) placed = true;
     attempts++;
   }
 
-  const person = personModel.clone();
+  const person = createPersonModel(); // <-- NEU: jedes Mal neu generieren
   person.position.set(px, 0, pz);
   person.rotation.y = Math.random() * Math.PI * 2;
-
-  if (!placed) {
-    const head = person.children.find(c => c.geometry.type === "SphereGeometry");
-    if (head) head.material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-  }
-
-  const bodyColor = new THREE.Color(Math.random() * 0xffffff);
-  const body = person.children.find(c => c.geometry.type === "CylinderGeometry" && c.position.y > 0.5);
-  if (body) body.material = new THREE.MeshStandardMaterial({ color: bodyColor });
-
-  person.children.forEach(c => {
-    if (c.geometry.type === "CylinderGeometry" && Math.abs(c.position.y - 1.1) < 0.05) {
-      c.material = new THREE.MeshStandardMaterial({ color: bodyColor });
+if (!placed) {
+  const redMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+  person.traverse(child => {
+    if (child.isMesh) {
+      child.material = redMaterial;
     }
   });
-
+}
   return person;
 }
 
 function animate() {
   requestAnimationFrame(animate);
+if (discoActive && discoLight) {
+  const t = Date.now() * 0.0001;
+  discoLight.color.setHSL((t % 1), 1, 0.5);
+}
   if (autoRotate) {
     const time = Date.now() * rotateSpeed;
     camera.position.x = camRadius * Math.cos(time);
@@ -306,7 +422,7 @@ document.getElementById("toggleObstacle").addEventListener("click", () => {
   updateObstacle();
   let lastlastCount = lastCount
   updatePeople(0)
-
+updateDensityDisplay(lastCount);
   updatePeople(lastlastCount); // neu berechnen
 });
 </script>
