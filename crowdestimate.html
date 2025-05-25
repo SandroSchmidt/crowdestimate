@@ -174,7 +174,7 @@ document.getElementById("toggleObstacle").style.background = obstacleEnabled ? "
 
 // Directional Light
 directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-directionalLight.position.set(20, 30, 20);
+directionalLight.position.set(20, 10, 20);
 directionalLight.castShadow = shadowEnabled;
 scene.add(directionalLight);
 
@@ -234,7 +234,7 @@ document.getElementById("changeObstacleColor").addEventListener("click", () => {
   updateObstacle();
 });
 
-document.getElementById("obstacleSize").addEventListener("input", e => {
+document.getElementById("obstacleSize").addEventListener("change", e => {
   obstacleSize = parseFloat(e.target.value);
   if (obstacleEnabled) {
     updateObstacle();
@@ -327,7 +327,7 @@ if (mode === "ambient") {
   directionalLight.visible = true;
   arrowHelper.visible = false;
 } else {
-  ambientLight.intensity = 0.2;
+  ambientLight.intensity = 0.4;
   ambientLight.visible = true;
 }
   directionalLight.visible = mode === "directional";
