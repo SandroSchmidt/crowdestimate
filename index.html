@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+     <link href="https://db.onlinewebfonts.com/c/023dfbd5b3775aaf9066cc15f2b676c9?family=MuseoSlab-500" rel="stylesheet" type="text/css" />
+
+  <meta name="description" content="Crowdreport ist ein nicht-kommerzielles Forschungs- und Simulationsprojekt für Crowd Management und Crowd Safety. Die Webanwendungen helfen, Besucherdichten und Personenflüsse bei Veranstaltungen abzuschätzen.">
+  <meta name="author" content="Sandro Schmidt">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index,follow">
+
+  <!-- Optional: Open Graph für bessere Einstufung in Scannern -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Crowdreport – Crowd Management Tools">
+  <meta property="og:description" content="Forschungs- und Simulationsprojekt für Crowd Management und Crowd Safety.">
+  <meta property="og:url" content="https://crowdreport.net/">
+
+  <title>crowdestimate v 3.5</title>
+ <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+
+  <!-- Import Map: Modul-URLs für three & Addons -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <!-- Bridge: ESM importieren -> als window-Globals exponieren + Ready-Event -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js'; // <— WICHTIG: namespace-import
+
+    window.THREE = THREE;
+    window.GLTFLoader = GLTFLoader;
+    window.SkeletonUtils = SkeletonUtils;
+
+    // Signal an klassischen App-Code: jetzt darfst du starten
+    window.dispatchEvent(new Event('three-bridge-ready'));
+  </script>
+
+  <!-- D3 für UI -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+ <style>
+   body {
+  margin: 0;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+/* Canvas nicht vom normalen Flow beeinflussen */
+canvas {
+  position: fixed;   /* oder absolute */
+  top: 0;
+  left: 0;
+  width: 80%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+/* Logo + Schriftzug im Vordergrund linksbündig */
+#logobild {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  height: 10%;         /* nach Bedarf */
+  z-index: 200;
+}
+
+#logoText {
+  position: fixed;
+  top: 4%;           /* leicht neben/unter dem Logo */
+  left: 8%;          /* Abstand zum Logo */
+  font-size: 24px;
+  z-index: 200;}
+    #sliderContainer {
+  position: fixed;              /* optional, aber meist sinnvoller als absolute */
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.9);
+  padding: 10px;
+  border-radius: 8px;
+  z-index: 120;                 /* WICHTIG: über dem Canvas */
+}
+ #settingsPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 20%;
+  height: 100%;
+  background: #eee;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-left: 1px solid #ccc;
+  z-index: 150;
+  transform: translateX(0);              /* sichtbar */
+  transition: transform 0.3s ease-in-out;
+}
+
+/* eingeklappter Zustand */
+#settingsPanel.closed {
+  transform: translateX(100%);
+}
+    .btn { display: inline-block; margin: 5px 5px 5px 0; padding: 6px 10px;
+      background: #ccc; border: none; border-radius: 4px; cursor: pointer; }
+    #densityDisplay {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 8px;
+      font-weight: bold; font-size: 18px; z-index: 100;
+    }
+#topRightButtons {
+  position: fixed;
+  display:none;
+  top: 10px;
+  right: 10px;
+  z-index: 160;
+  display: flex;
+  gap: 10px;      /* Abstand zwischen Buttons */
+}
+
+#topRightButtons .btn {
+  padding: 6px 10px;
+}
+    @media (max-width: 768px) {
+  /* 3D-Canvas: volle Breite, etwas kleinere Höhe wirkt oft besser */
+  canvas {
+    width: 100%;
+    height: 60%;
+  }
+
+  /* Settings-Panel als Overlay von oben, volle Breite */
+  #settingsPanel {
+    width: 100%;
+    height: 40%;
+    bottom: 0;
+    display:none;
+    top: auto;
+    right: 0;
+    left: 0;
+    border-left: none;
+    border-top: 1px solid #ccc;
+    background: rgba(238, 238, 238, 0.97);
+  }
+
+  /* Toggle-Button besser erreichbar */
+#settingsToggle {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  text-align: center;
+}
+
+  /* Dichte-Anzeige etwas kleiner und höher */
+  #densityDisplay {
+    top: 45px;
+    font-size: 14px;
+    padding: 4px 8px;
+  }
+
+  /* Slider unten, aber etwas breiter */
+  #sliderContainer {
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    padding: 8px;
+  }
+
+  /* Logo + Text etwas kleiner */
+  #logobild {
+    top: 5px;
+    left: 5px;
+    height: 8%;
+  }
+
+  #logoText {
+    top: 5px;
+    left: 20%;
+    font-size: 18px;
+  }
+
+  /* Buttons etwas größer antippbar */
+  .btn {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  /* Quiz-Overlay zentriert und lesbar */
+  #quizContainer {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+    padding: 16px;
+  }
+
+  /* Range-Anzeige fix, wackelt nicht */
+  #guessrange {
+    display: inline-block;
+    width: 8ch;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Highscore-Box ggf. schmaler */
+  #quizResultsTable {
+    left: 5%;
+    right: 5%;
+    width: 90%;
+  }
+}
+
+  </style>
+<body>
+  <div id="progressOverlay"
+     style="display:none;
+            position:fixed;
+            top:10%;
+            white-space: pre-line;
+            left:50%;
+            transform:translate(-50%, -50%);
+            background:rgba(0,0,0,0.75);
+            color:white;
+            padding:20px 30px;
+            border-radius:10px;
+            font-size:22px;
+            z-index:2000;
+            text-align:center;">
+</div>  
+<div id="quizResultsTable"
+     style="display: none;
+       position: fixed;
+       top: 15%;
+       left: 20px;
+       background: white;
+       padding: 10px;
+       border: 1px solid #ccc;
+       z-index: 200;"
+     onclick="d3.select('#quizResultsTable').style('display','none')">
+</div>
+
+ <div id="topRightButtons">
+  <button class="btn" id="testButton" onclick="startDensityQuiz(10)">Test</button>
+  <button class="btn" id="settingsToggle">Settings</button>
+</div>
+    <img id="logobild" src="./img/seg_logo.jpg" onclick="loadQuizResults()">
+  <span id="logoText" style="font-family: 'MuseoSlab-500', sans-serif;" >crowdestimate</span>
+  <div id="densityDisplay">people/m²</div>
+
+<div id="settingsPanel">
+  <p><u>Camera Settings:</u></p>
+  <label>Position: <input id="camHeight" type="range" min="1" max="50" step="1" value="10"></label><br>
+  <label>Rotate: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.0005"></label><br>
+  <hr>
+  <p><u>Light Settings:</u></p>
+  <button id="btnAmbient" class="btn">Ambient</button>
+  <button id="btnDirectional" class="btn">Directional</button>
+  <button id="btnDisco" class="btn">Disco</button>
+  <button id="toggleArrow" class="btn">Direction</button>
+  <hr>
+   <fieldset>
+  <legend>Obstacle 1:</legend>
+  <button id="toggleObstacle" class="btn">on/off</button>
+  <button id="changeObstacleColor" class="btn">Color</button><br>
+    <label>Size (m): <input id="obstacleSize" type="number" min="1" max="5" step="0.1" value="3"></label><br>
+  <label>Height (m): <input id="obstacleHeight" type="number" min="0.25" max="5" step="0.25" value="1"></label><br>
+  </fieldset>
+  <fieldset>
+  <legend>Obstacle 2:</legend>
+  <button id="toggleObstacle2" class="btn">on/off</button>
+  <button id="changeObstacleColor2" class="btn">Color</button>
+  <div class="row">Size (m): <input id="obstacleSize2" type="number" min="1" max="5" step="0.1" value="2.5"></div>
+  <div class="row">Height (m): <input id="obstacleHeight2" type="number" min="0.25" max="5" step="0.25" value="1"></div>
+  <div class="subtle">Drag the cube to move it.</div>
+</fieldset>
+
+  <hr>
+  <p><u>Agents Settings:</u></p>
+  <label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
+  <button id="toggleStyle" class="btn">Style: Minimal</button>
+  <div class="row">Women %: <input id="percentWomen" type="number" min="0" max="100" step="1" value="50"></div>
+<div class="row">
+  Male model:
+  <select id="maleModel">
+    <!-- Pfade anpassen -->
+    <option value="./crestimate/male4.glb">Male 1</option>
+    <option value="./crestimate/male2.glb">Male 2</option>
+    <option value="./crestimate/male3.glb">Male 3</option>
+        <option value="./crestimate/male1.glb">Male 4</option>
+  </select>
+</div>
+<div class="row">
+  Female model:
+  <select id="femaleModel">
+    <!-- Pfade anpassen -->
+    <option value="./crestimate/female1.glb">Female 1</option>
+    <option value="./crestimate/female2.glb">Female 2</option>
+  </select>
+</div>
+  <hr>
+  <button id="btnQuiz" class="btn" onclick="startDensityQuiz(1)">Estimate Random Density</button>
+  
+</div>
+
+<div id="sliderContainer">
+  <label>Count: <input id="slider" type="range" min="0" max="250" value="1"></label>
+  <span id="personCountDisplay">1 people</span>
+</div>
+
+<div id="quizContainer" style="display:none; position:absolute; top:90%; left:50%; transform:translate(-50%,-50%);
+ background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
+  <p><strong>Estimate Density (people/m²):</strong></p>
+  <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(this.value + ' p/m²' )">
+  <span style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" id="guessrange" ></span>
+
+  <button id="btnSubmitGuess">Submit</button><br>
+  <span id="quizFeedback" style="color: white;">T</span>
+</div>
+
+<!-- App-Code (klassisch). Startet erst nach "three-bridge-ready". -->
+<script>
+  let multiQuizActive = false;
+let multiQuizRounds = 0;
+let multiQuizCurrent = 0;
+let multiQuizCorrect = 0;
+/* ------- Globals ------- */
+let scene, camera, renderer, personGroup, mainGround;
+const boxSize = 10;
+let lastCount = 0;
+let autoRotate = true;
+let rotateSpeed = 0.0001;
+let camRadius = 15;
+let camHeight = 10;
+let shadowEnabled = true;
+
+let obstacleEnabled = false;
+let obstacleMesh = null;
+let directionalLight, ambientLight;
+let arrowHelper = null;
+let arrowVisible = true;
+
+let obstacleColor = "steelblue";
+let obstacleSize = 3;
+let obstacleHeight = 1;
+
+let avgPersonHeight = 1.78;
+let currentLightMode = "ambient";
+let discoLight = null;
+let discoActive = false;
+let originalBackground = null;
+let humanScaleBase = 1; // skaliert GLB auf 1.78 m Grundhöhe
+
+// Drag state
+let raycaster, pointer, isDragging = false, dragPlane, dragOffset;
+let autoTestMode = false; 
+// Realistic human assets
+let humanPrototype = null;
+let humanClips = [];
+let mixers = [];
+let useAnimations = true;
+let clock;
+// gender mix + model prototypes
+let percentWomen = 50;
+
+let malePath = './crestimate/male1.glb';
+let femalePath = './crestimate/female1.glb';
+
+let malePrototype = null, femalePrototype = null;
+let maleClips = [], femaleClips = [];
+let maleScaleBase = 1, femaleScaleBase = 1;
+
+// second obstacle
+let obstacleEnabled2 = false;
+let obstacleMesh2 = null;
+let obstacleSize2 = 2.5;
+let obstacleHeight2 = 1;
+let obstacleColor2 = "tomato";
+
+// dragging: which obstacle is being dragged (0 none / 1 first / 2 second)
+let draggingIdx = 0;
+// Stil-Toggle
+let useRealisticHumans = false; // false = Minimal, true = Realistic
+let settingsOpen = false;
+
+
+const formatPersons = (n) => `${n} ${n===1 ? "people" : "people"}`;
+const firebaseConfig = {
+  apiKey: "AIzaSyBOOdW1SHCwBZSchUJ7DfJZ1a7-dEYTvuQ",
+  authDomain: "crowdcount-678c8.firebaseapp.com",
+  databaseURL: "https://crowdcount-678c8-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "crowdcount-678c8",
+  storageBucket: "crowdcount-678c8.appspot.com",
+  messagingSenderId: "1020533758948",
+  appId: "1:1020533758948:web:23ec6e175dff3b5eedc5f1",
+  measurementId: "G-00674BETEZ"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+function saveQuizResultToFirebase(playerName, final,accu) {
+  const cleaned = playerName.trim();
+  if (!cleaned) return;
+
+  // direkter Pfad zum Spieler
+  const ref = database.ref('crest_quiz/' + cleaned);
+
+  const payload = {
+    score: final,
+    accuracy: accu,
+    timestamp: new Date().toISOString()
+  };
+
+  ref.set(payload, (err) => {
+    if (err) {
+      console.error("Error saving quiz result:", err);
+    } else {
+      console.log("Quiz result saved:", payload);
+    }
+  });
+}
+
+
+/* ------- UI helpers ------- */
+function updateDensityDisplay(count) {
+  const totalArea = boxSize * boxSize;
+  const a1 = obstacleEnabled ? obstacleSize * obstacleSize : 0;        // dein altes Hindernis
+  const a2 = obstacleEnabled2 ? obstacleSize2 * obstacleSize2 : 0;     // neues Hindernis
+  const availableArea = totalArea - a1 - a2;
+  const density = availableArea > 0 ? (count / availableArea).toFixed(2) : "∞";
+  document.getElementById("densityDisplay").innerText = `${density} people/m²`;
+}
+function updateStyleButton(){
+  const btn = document.getElementById("toggleStyle");
+  if (!btn) return;
+  btn.textContent = useRealisticHumans ? "Style: Realistic" : "Style: Minimal";
+  btn.style.background = useRealisticHumans ? "#cfc" : "#ccc";
+}
+function refreshPeople(){
+  const keep = lastCount;
+  updatePeople(0);
+  updatePeople(keep);
+}
+
+/* ------- Init ------- */
+function init() {
+ const settingsToggle = document.getElementById('settingsToggle');
+  if (settingsToggle) {
+    settingsToggle.addEventListener('click', toggleSettingsPanel);
+  }
+
+  const panel = document.getElementById('settingsPanel');
+  if (panel && !settingsOpen) {
+    panel.classList.add('closed');
+  }
+
+
+  // Basis
+  clock = new THREE.Clock();
+  dragOffset = new THREE.Vector3();
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(15, 10, 15);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(20, 15, 20);
+  directionalLight.castShadow = shadowEnabled;
+  directionalLight.shadow.mapSize.set(1024, 1024);
+  directionalLight.shadow.camera.near = 1;
+  directionalLight.shadow.camera.far = 100;
+  directionalLight.shadow.camera.left = -12;
+  directionalLight.shadow.camera.right = 12;
+  directionalLight.shadow.camera.top = 12;
+  directionalLight.shadow.camera.bottom = -12;
+  scene.add(directionalLight);
+
+  ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+  ambientLight.visible = true;
+  scene.add(ambientLight);
+
+  arrowHelper = new THREE.ArrowHelper(
+    directionalLight.position.clone().normalize(),
+    new THREE.Vector3(0, 0, 0),
+    5, 0xffaa00, 1, 0.5
+  );
+  scene.add(arrowHelper);
+
+  const outerSize = boxSize + 2;
+  const outerGround = new THREE.Mesh(
+    new THREE.BoxGeometry(outerSize, 0.1, outerSize),
+    new THREE.MeshStandardMaterial({ color: "lightgrey" })
+  );
+  outerGround.position.y = -0.11;
+  outerGround.receiveShadow = true;
+  scene.add(outerGround);
+
+  mainGround = new THREE.Mesh(
+    new THREE.BoxGeometry(boxSize, 0.1, boxSize),
+    new THREE.MeshStandardMaterial({ color: "grey" })
+  );
+  mainGround.position.y = -0.1;
+  mainGround.receiveShadow = true;
+  scene.add(mainGround);
+
+  personGroup = new THREE.Group();
+  scene.add(personGroup);
+
+  raycaster = new THREE.Raycaster();
+  pointer = new THREE.Vector2();
+  dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+  renderer.domElement.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+
+  document.getElementById("btnAmbient").addEventListener("click", () => setLightMode("ambient"));
+  document.getElementById("btnDirectional").addEventListener("click", () => setLightMode("directional"));
+  document.getElementById("btnDisco").addEventListener("click", () => setLightMode("disco"));
+  document.getElementById("toggleArrow").addEventListener("click", () => {
+    arrowVisible = !arrowVisible;
+    arrowHelper.visible = arrowVisible && directionalLight.visible;
+    document.getElementById("toggleArrow").style.background = arrowVisible ? "#fc6" : "#ccc";
+  });
+
+  document.getElementById("obstacleHeight").addEventListener("input", e => {
+    obstacleHeight = parseFloat(e.target.value);
+    if (obstacleEnabled) updateObstacle();
+  });
+  document.getElementById("changeObstacleColor").addEventListener("click", () => {
+    obstacleColor = Math.floor(Math.random() * 0xffffff);
+    updateObstacle();
+  });
+  document.getElementById("obstacleSize").addEventListener("change", e => {
+    obstacleSize = parseFloat(e.target.value);
+    if (obstacleEnabled) {
+      updateObstacle();
+      updatePeople(lastCount);
+      updateDensityDisplay(lastCount);
+    }
+  });
+
+  d3.select("#slider").on("input", function () {
+    const val = +this.value;
+    updatePeople(val);
+    d3.select("#personCountDisplay").text(formatPersons(val));
+  });
+  document.getElementById("camHeight").addEventListener("input", e => {
+    camHeight = parseFloat(e.target.value);
+  });
+  document.getElementById("rotateSpeed").addEventListener("input", e => {
+    rotateSpeed = parseFloat(e.target.value);
+    autoRotate = rotateSpeed > 0;
+  });
+
+  document.getElementById("toggleObstacle").addEventListener("click", () => {
+    obstacleEnabled = !obstacleEnabled;
+    document.getElementById("toggleObstacle").style.background = obstacleEnabled ? "#c66" : "#ccc";
+    updateObstacle();
+    const keep = lastCount;
+    updatePeople(0);
+    updateDensityDisplay(keep);
+    updatePeople(keep);
+  });
+
+  document.getElementById("avgHeight").addEventListener("input", e => {
+    avgPersonHeight = parseFloat(e.target.value);
+    refreshPeople();
+  });
+
+  document.getElementById("toggleStyle").addEventListener("click", () => {
+    useRealisticHumans = !useRealisticHumans;
+    updateStyleButton();
+    if (useRealisticHumans && !humanPrototype) {
+      console.warn("Realistic selected, GLB not loaded yet. Will switch when loaded.");
+      return;
+    }
+    refreshPeople();
+  });
+  updateStyleButton();
+
+
+  document.getElementById("btnSubmitGuess").addEventListener("click", submitDensityGuess);
+
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  d3.select("#slider").property("value", 1);
+  updatePeople(1);
+  d3.select("#personCountDisplay").text(formatPersons(1));
+// Model-Selects + Frauenanteil
+const maleSel = document.getElementById('maleModel');
+const femaleSel = document.getElementById('femaleModel');
+malePath = maleSel?.value || malePath;
+femalePath = femaleSel?.value || femalePath;
+
+maleSel?.addEventListener('change', ()=>{ malePath = maleSel.value; loadModel('male', malePath); });
+femaleSel?.addEventListener('change', ()=>{ femalePath = femaleSel.value; loadModel('female', femalePath); });
+document.getElementById('percentWomen')?.addEventListener('input', e=>{
+  percentWomen = Math.max(0, Math.min(100, parseInt(e.target.value||'0',10)));
+  refreshPeople();
+});
+// Obstacle 2
+document.getElementById("toggleObstacle2").addEventListener("click", ()=>{
+  obstacleEnabled2 = !obstacleEnabled2;
+  updateObstacle(2);
+  const keep = lastCount; updatePeople(0); updateDensityDisplay(keep); updatePeople(keep);
+});
+document.getElementById("changeObstacleColor2").addEventListener("click", ()=>{
+  obstacleColor2 = Math.floor(Math.random() * 0xffffff);
+  updateObstacle(2);
+});
+document.getElementById("obstacleSize2").addEventListener("input", e=>{
+  obstacleSize2 = parseFloat(e.target.value); updateObstacle(2);
+  const keep = lastCount; updatePeople(0); updateDensityDisplay(keep); updatePeople(keep);
+});
+document.getElementById("obstacleHeight2").addEventListener("input", e=>{
+  obstacleHeight2 = parseFloat(e.target.value); updateObstacle(2);
+});
+
+// initiale Modelle laden
+loadModel('male',   malePath);
+loadModel('female', femalePath);
+  loadHumanGLB();
+  animate();
+    const params = new URLSearchParams(window.location.search);
+  
+  
+  if (params.get('test') === 'true') {
+    autoTestMode = true;
+     const trb = document.getElementById("topRightButtons");
+  if (trb) trb.remove();
+    startDensityQuiz(10); 
+}
+
+if (params.get('results') == 'true') {loadQuizResults()}
+
+}
+/* ------- GLB loading ------- */
+function loadHumanGLB() {
+  const loader = new window.GLTFLoader();
+  loader.load(
+    './crestimate/dude.glb', // <— Pfad prüfen!
+    (gltf) => {
+      humanPrototype = gltf.scene;
+      const bbox = new THREE.Box3().setFromObject(humanPrototype);
+const glbHeight = bbox.max.y - bbox.min.y;
+if (glbHeight > 0) humanScaleBase = 1.78 / glbHeight;
+
+      humanClips = gltf.animations || [];
+
+      humanPrototype.traverse(obj => {
+        if (obj.isMesh) {
+          obj.castShadow = true;
+          obj.receiveShadow = false;
+          if (obj.material) {
+            obj.material = obj.material.clone();
+            if ('roughness' in obj.material) obj.material.roughness = 0.9;
+            if ('metalness' in obj.material) obj.material.metalness = 0.0;
+          }
+        }
+      });
+
+      if (!humanClips.length) useAnimations = false;
+      if (useRealisticHumans) refreshPeople();
+    },
+    undefined,
+    (err) => {
+      console.warn('GLB load failed, using fallback humans only:', err);
+    }
+  );
+}
+
+/* ------- Quiz ------- */
+function startDensityQuiz(number) {
+  if(number>5){percentWomen = 10}
+  arrowVisible = false
+  // UI ausblenden
+  document.getElementById("settingsPanel").style.display = "none";
+  document.getElementById("sliderContainer").style.display = "none";
+  document.getElementById("densityDisplay").style.display = "none";
+
+  // Hintergrund sichern
+  originalBackground = scene.background;
+
+    multiQuizActive = false;
+    multiQuizRounds = number;
+    multiQuizCurrent = 0;
+    multiQuizCorrect = 0;
+        
+
+     useRealisticHumans = true;
+  updateStyleButton();
+
+  document.getElementById("quizContainer").style.display = "block";
+
+   startDensityQuizRound();
+  
+ 
+}
+
+function startDensityQuizRound() {
+  multiQuizCurrent++;
+
+  const randomCount = Math.floor(20 + Math.random() * 200);
+  const lightModes = ["ambient", "directional", "disco"];
+  const randomMode = lightModes[Math.floor(Math.random() * lightModes.length)];
+
+  setLightMode(randomMode);
+  // NEU: pro Runde andere Kameraposition & Rotationsgeschwindigkeit
+  //rotateSpeed = 0.0002 + Math.random() * 0.001; // z.B. 0.0002–0.0012
+  autoRotate = false;
+
+  camHeight = 2 + Math.random() * 10;          // Kamerahöhe ca. 5–20 m
+  camRadius = 5 + Math.random() * 20;         // Entfernung zum Zentrum 10–20 m
+
+  // Slider-Werte aktualisieren (auch wenn sie im Quiz ausgeblendet sind)
+  const camHeightSlider = document.getElementById("camHeight");
+  if (camHeightSlider) camHeightSlider.value = camHeight;
+
+  const rotateSpeedSlider = document.getElementById("rotateSpeed");
+  if (rotateSpeedSlider) rotateSpeedSlider.value = rotateSpeed;
+  updatePeople(0);
+  updatePeople(randomCount);
+
+  const loader = new THREE.TextureLoader();
+  const randomIndex = Math.floor(Math.random() * 8) + 1;
+  loader.load('./img/' + randomIndex + '.jpg', function(texture) {
+    scene.background = texture;
+  });
+
+
+
+}
+
+function submitDensityGuess() {
+  const guess = parseFloat(document.getElementById("densityGuess").value);
+  const totalArea = boxSize * boxSize;
+  const obstacleArea = obstacleEnabled ? obstacleSize * obstacleSize : 0;
+  const availableArea = totalArea - obstacleArea;
+  const trueDensity = availableArea > 0 ? (lastCount / availableArea) : Infinity;
+  const error = Math.abs(guess - trueDensity);
+  const feedback = document.getElementById("quizFeedback");
+
+         // NEU: Fortschritt 2s anzeigen
+
+  if (isNaN(guess)) {
+    feedback.textContent = "Bitte eine gültige Zahl eingeben.";
+    feedback.style.color = "red";
+    return;
+  }
+  if (error < 0.3) {
+    multiQuizCorrect++
+    feedback.textContent = `Good! The Exact value is ${trueDensity.toFixed(2)}.`;
+    feedback.style.color = "green";
+  } else {
+    feedback.textContent = `Incorrect! The Exact value is ${trueDensity.toFixed(2)}.`;
+    feedback.style.color = "orange";
+  }
+  nowaccu = Math.max(0,(1-error)*100)
+if(multiQuizCurrent==1)
+{multiQuizAccu = nowaccu}else
+{multiQuizAccu = (multiQuizAccu*(multiQuizCurrent-1)+nowaccu)/multiQuizCurrent}
+
+//console.log(nowaccu,multiQuizAccu)
+  const accu = multiQuizAccu.toFixed(2);
+  setTimeout(() => {
+    feedback.textContent = "";
+  }, 2000);
+  showProgressOverlay();
+  console.log(multiQuizCurrent,multiQuizRounds,multiQuizCorrect)
+if(multiQuizCurrent>multiQuizRounds-1)
+  {setTimeout(() => {
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("settingsPanel").style.display = "block";
+    document.getElementById("sliderContainer").style.display = "block";
+    document.getElementById("densityDisplay").style.display = "block";
+    scene.background = originalBackground;
+   
+   if(multiQuizRounds>multiQuizRounds-1) {
+    d3.select('#progressOverlay').style("display","none") 
+    const message =
+
+  "You got " + multiQuizCorrect + " out of " + multiQuizRounds + " correct.\n\n" +
+  "If you want to save your result, please enter your name.\n" +
+  "Click 'Cancel' to skip saving.";
+
+const playerName = prompt(message, "");
+
+if (playerName && playerName.trim() !== "") {
+  const cleanedName = playerName.trim();
+  saveQuizResultToFirebase(cleanedName, (multiQuizCorrect/multiQuizRounds)*100,Math.round(multiQuizAccu));
+       if (autoTestMode) {
+          document.body.innerHTML =
+            '<div style="position:fixed;top:50%;left:50%;' +
+            'transform:translate(-50%,-50%);font-family:sans-serif;' +
+            'font-size:24px;text-align:center;">result saved</div>';
+        }
+} else {
+  document.body.innerHTML =
+   '<div style="position:fixed;top:50%;left:50%;' +
+            'transform:translate(-50%,-50%);font-family:sans-serif;' +
+            'font-size:24px;text-align:center;">Results have not been saved. Press F5 to retry.</div>';
+          
+}}
+
+  }, 1000);}else{setTimeout(() => {startDensityQuizRound()},1000) }
+}
+
+/* ------- Lighting ------- */
+function setLightMode(mode) {
+  currentLightMode = mode;
+  if (mode === "ambient") {
+    ambientLight.intensity = 0.8;
+    ambientLight.visible = true;
+    directionalLight.visible = true;
+    arrowHelper.visible = false;
+  } else {
+    ambientLight.intensity = 0.4;
+    ambientLight.visible = true;
+  }
+  directionalLight.visible = mode === "directional";
+  arrowHelper.visible = (mode === "directional") && arrowVisible;
+
+  if (discoLight) {
+    scene.remove(discoLight);
+    discoLight = null;
+    discoActive = false;
+  }
+  if (mode === "disco") {
+    discoLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    discoLight.position.copy(directionalLight.position);
+    scene.add(discoLight);
+    discoActive = true;
+  }
+
+  document.getElementById("btnAmbient").style.background = mode === "ambient" ? "#ccf" : "#ccc";
+  document.getElementById("btnDirectional").style.background = mode === "directional" ? "#ccf" : "#ccc";
+  document.getElementById("btnDisco").style.background = mode === "disco" ? "#ccf" : "#ccc";
+}
+
+/* ------- Obstacle ------- */
+function updateObstacle(idx = 1) {
+  // state je nach idx
+  const enabled = (idx === 1) ? obstacleEnabled : obstacleEnabled2;
+  const size    = (idx === 1) ? obstacleSize    : obstacleSize2;
+  const height  = (idx === 1) ? obstacleHeight  : obstacleHeight2;
+  const color   = (idx === 1) ? obstacleColor   : obstacleColor2;
+  let   mesh    = (idx === 1) ? obstacleMesh    : obstacleMesh2;
+
+  const oldPos = mesh ? mesh.position.clone() : new THREE.Vector3(0, height/2, 0);
+
+  if (mesh) { disposeObjectDeep(mesh); scene.remove(mesh); mesh = null; }
+
+  if (enabled) {
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(size, height, size),
+      new THREE.MeshStandardMaterial({ color })
+    );
+    box.castShadow = true;
+    const half = boxSize/2 - size/2;
+    const x = Math.max(-half, Math.min(half, oldPos.x));
+    const z = Math.max(-half, Math.min(half, oldPos.z));
+    box.position.set(x, height/2, z);
+    scene.add(box);
+    mesh = box;
+  }
+
+  if (idx === 1) obstacleMesh = mesh; else obstacleMesh2 = mesh;
+}
+
+
+/* ------- People ------- */
+function createPersonModel() {
+if (useRealisticHumans && malePrototype && femalePrototype) {
+  const isFemale = (Math.random()*100 < percentWomen);
+  const proto = isFemale ? femalePrototype : malePrototype;
+  const base  = isFemale ? femaleScaleBase : maleScaleBase;
+  const clips = isFemale ? femaleClips : maleClips;
+
+  const clone = window.SkeletonUtils.clone(proto);
+
+  // identische Größenlogik wie beim Minimal-Modell
+  const heightVar = 1 + (Math.random()*0.2 - 0.1); // ±10%
+  const scale = base * (avgPersonHeight / 1.78) * heightVar;
+  clone.scale.setScalar(scale);
+
+  const hueJitter = (Math.random()*0.12 - 0.06);
+  const lightJitter = (Math.random()*0.08 - 0.04);
+  clone.traverse(obj=>{
+    if (obj.isMesh && obj.material && obj.material.color) {
+      const c = obj.material.color.clone();
+      if (c.offsetHSL) c.offsetHSL(hueJitter, 0, lightJitter);
+      obj.material = obj.material.clone();
+      obj.material.color.copy(c);
+    }
+    if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = false; }
+  });
+
+  if (useAnimations && clips.length && Math.random() < 0.35) {
+    const mixer = new THREE.AnimationMixer(clone);
+    mixers.push(mixer);
+    const idle = THREE.AnimationClip.findByName(clips, 'Idle') || clips[0];
+    mixer.clipAction(idle).play();
+    mixer.setTime(Math.random()*2);
+    clone.userData.mixer = mixer;
+  }
+  return clone;
+}
+
+  return createPersonModel_Fallback();
+}
+
+function createPersonModel_Fallback() {
+  const group = new THREE.Group();
+
+  const totalHeight = avgPersonHeight * (1 + (Math.random() * 0.2 - 0.1));
+
+  const clothingColors = ["white", "white", "white","lime","beige", "black", "steelblue", "green"];
+  const randomColor = clothingColors[Math.floor(Math.random() * clothingColors.length)];
+  const clothingColor = new THREE.Color(randomColor);
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: clothingColor });
+  const armMaterial  = new THREE.MeshStandardMaterial({ color: clothingColor });
+
+  const legHeight = totalHeight * 0.45;
+  const bodyHeight = totalHeight * 0.30;
+  const headHeight = totalHeight * 0.2;
+  const headRadius = headHeight / 2;
+
+  const legMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  const legLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, legHeight, 8), legMaterial);
+  legLeft.position.set(-0.10, legHeight / 2, 0);
+  legLeft.castShadow = true; group.add(legLeft);
+
+  const legRight = legLeft.clone();
+  legRight.position.x = 0.1;
+  group.add(legRight);
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, bodyHeight, 12), bodyMaterial);
+  body.position.y = legHeight + bodyHeight / 2;
+  body.castShadow = true; group.add(body);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 12, 12), new THREE.MeshStandardMaterial({ color: 0x9c6110 }));
+  head.position.y = legHeight + bodyHeight + headRadius;
+  head.castShadow = true; group.add(head);
+
+  const hairGeometry = new THREE.SphereGeometry(headRadius * 0.9, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  const hairMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+  const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+  hair.position.y = head.position.y + headRadius * 0.35;
+  hair.rotation.z = Math.PI/3; hair.rotation.y = Math.PI/2;
+  hair.castShadow = true; group.add(hair);
+
+  const armLength = bodyHeight * 0.75;
+  const armLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, armLength, 8), armMaterial);
+  armLeft.position.set(-0.25, body.position.y, 0);
+  armLeft.rotation.z = Math.PI;
+  armLeft.castShadow = true; group.add(armLeft);
+
+  const armRight = armLeft.clone();
+  armRight.position.x = 0.25;
+  group.add(armRight);
+
+  return group;
+}
+
+function updatePeople(count) {
+  d3.select("#densityDisplay").style("color","black");
+  const delta = count - lastCount;
+
+
+
+  if (delta > 0) {
+    for (let i = 0; i < delta; i++) personGroup.add(createSinglePerson());
+  } else if (delta < 0) {
+    for (let i = 0; i < -delta; i++) {
+      const obj = personGroup.children[personGroup.children.length - 1];
+      if (obj) {
+        if (obj.userData && obj.userData.mixer) {
+          const idx = mixers.indexOf(obj.userData.mixer);
+          if (idx >= 0) mixers.splice(idx, 1);
+          obj.userData.mixer.stopAllAction?.();
+        }
+        disposeObjectDeep(obj);
+        personGroup.remove(obj);
+      }
+    }
+  }
+  lastCount = count;
+  updateDensityDisplay(count);
+}
+
+function createSinglePerson() {
+  const minDistance = 0.5;
+  let px, pz;
+  let placed = false;
+  let attempts = 0;
+  const positions = personGroup.children.map(p => ({ x: p.position.x, z: p.position.z }));
+
+  while (!placed && attempts < 100) {
+    px = (Math.random() - 0.5) * boxSize;
+    pz = (Math.random() - 0.5) * boxSize;
+
+    const tooClose = positions.some(pos => {
+      const dx = pos.x - px;
+      const dz = pos.z - pz;
+      return Math.sqrt(dx * dx + dz * dz) < minDistance;
+    });
+
+   let insideObstacle = false;
+if (obstacleEnabled && obstacleMesh) {
+  const half = obstacleSize / 2;
+  insideObstacle = Math.abs(px - obstacleMesh.position.x) < half && Math.abs(pz - obstacleMesh.position.z) < half;
+}
+if (!insideObstacle && obstacleEnabled2 && obstacleMesh2) {
+  const half2 = obstacleSize2 / 2;
+  insideObstacle = Math.abs(px - obstacleMesh2.position.x) < half2 && Math.abs(pz - obstacleMesh2.position.z) < half2;
+}
+
+    if (!tooClose && !insideObstacle) placed = true;
+    attempts++;
+  }
+
+  const person = createPersonModel();
+  person.position.set(px, 0, pz);
+  person.rotation.y = Math.random() * Math.PI * 2;
+
+  if (!placed) {
+    d3.select("#densityDisplay").style("color","red");
+    const redMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    person.traverse(child => { if (child.isMesh) child.material = redMaterial; });
+  }
+  return person;
+}
+
+/* ------- Dragging ------- */
+function setPointerFromEvent(event){
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = ( (event.clientX - rect.left) / rect.width ) * 2 - 1;
+  const y = -( (event.clientY - rect.top) / rect.height ) * 2 + 1;
+  pointer.set(x, y);
+}
+
+function onPointerDown(event){
+  setPointerFromEvent(event);
+  raycaster.setFromCamera(pointer, camera);
+  const hits = [];
+  if (obstacleEnabled && obstacleMesh)  hits.push(...raycaster.intersectObject(obstacleMesh,  false));
+  if (obstacleEnabled2 && obstacleMesh2) hits.push(...raycaster.intersectObject(obstacleMesh2, false));
+  if (!hits.length) return;
+
+  // nächstes Objekt wählen
+  hits.sort((a,b)=>a.distance-b.distance);
+  const hitObj = hits[0].object;
+  draggingIdx = (obstacleMesh2 && (hitObj === obstacleMesh2 || hitObj.parent === obstacleMesh2)) ? 2 : 1;
+
+  const p = new THREE.Vector3();
+  if(!raycaster.ray.intersectPlane(dragPlane, p)) return;
+
+  const pos2D = (draggingIdx===1 ? obstacleMesh.position : obstacleMesh2.position).clone(); pos2D.y = 0;
+  dragOffset.copy(pos2D).sub(p);
+
+  isDragging = true;
+  dragStartAutoRotate = autoRotate;
+  autoRotate = false;
+  document.body.style.cursor = 'grabbing';
+}
+    // --- Arms down for ReadyPlayerMe models ---
+function lowerArms(model) {
+  const leftArm     = model.getObjectByName("LeftArm");
+  const leftForeArm = model.getObjectByName("LeftForeArm");
+  const rightArm     = model.getObjectByName("RightArm");
+  const rightForeArm = model.getObjectByName("RightForeArm");
+
+  // Falls Namen anders sind (RPM variiert leicht):
+  const lUpper = model.getObjectByName("LeftUpperArm") || leftArm;
+  const lLower = model.getObjectByName("LeftLowerArm") || leftForeArm;
+  const rUpper = model.getObjectByName("RightUpperArm") || rightArm;
+  const rLower = model.getObjectByName("RightLowerArm") || rightForeArm;
+
+  if (lUpper) lUpper.rotation.x = 1.2;
+  if (lLower) lLower.rotation.x = 0.5;
+  if (rUpper) rUpper.rotation.x = 1.2;
+  if (rLower) rLower.rotation.x = 0.5;
+}
+function loadModel(kind, path){
+  const loader = new window.GLTFLoader();
+  loader.load(path, (gltf)=>{
+    const root = gltf.scene;
+    root.traverse(o=>{
+      if (o.isMesh) {
+        o.castShadow = true; o.receiveShadow = false;
+        if (o.material) {
+          o.material = o.material.clone();
+          if ('roughness' in o.material) o.material.roughness = 0.9;
+          if ('metalness' in o.material) o.material.metalness = 0.0;
+        }
+      }
+    });
+
+      if (kind === 'male' && path.includes("male3.glb")) {
+      lowerArmsMale3(root);
+    }
+         if (kind === 'male' && path.includes("male4.glb")) {
+    lowerArms(root);
+    }
+
+
+
+// Arme absenken
+
+
+    const bbox = new THREE.Box3().setFromObject(root);
+    const h = Math.max(0.0001, bbox.max.y - bbox.min.y);
+    const base = 1.78 / h; // auf 1.78 m normalisieren
+
+    if (kind === 'male')  { malePrototype = root;  maleClips = gltf.animations || [];  maleScaleBase = base; }
+    if (kind === 'female'){ femalePrototype = root; femaleClips = gltf.animations || []; femaleScaleBase = base; }
+
+    if (useRealisticHumans) refreshPeople();
+  }, undefined, (err)=> console.warn(`Failed to load ${kind} model:`, err));
+}
+function onPointerMove(event){
+  if(!isDragging) return;
+  setPointerFromEvent(event);
+  raycaster.setFromCamera(pointer, camera);
+
+  const p = new THREE.Vector3();
+  if(!raycaster.ray.intersectPlane(dragPlane, p)) return;
+  p.add(dragOffset);
+
+  const size = (draggingIdx===1) ? obstacleSize : obstacleSize2;
+  const height = (draggingIdx===1) ? obstacleHeight : obstacleHeight2;
+  const mesh = (draggingIdx===1) ? obstacleMesh : obstacleMesh2;
+
+  if (!mesh) return;
+  const half = boxSize/2 - size/2;
+  const x = Math.max(-half, Math.min(half, p.x));
+  const z = Math.max(-half, Math.min(half, p.z));
+  mesh.position.set(x, height/2, z);
+}
+function onPointerUp(){
+  if(!isDragging) return;
+  isDragging = false;
+  autoRotate = dragStartAutoRotate;
+  document.body.style.cursor = 'default';
+
+  const keep = lastCount;
+  updatePeople(0);
+  updateDensityDisplay(keep);
+  updatePeople(keep);
+}
+
+
+/* ------- Render loop ------- */
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  for (let i = 0; i < mixers.length; i++) mixers[i].update(dt);
+  if (discoActive && discoLight) {
+    const t = Date.now() * 0.0001;
+    discoLight.color.setHSL((t % 1), 1, 0.5);
+  }
+  if (autoRotate) {
+    const time = Date.now() * rotateSpeed;
+    camera.position.x = camRadius * Math.cos(time);
+    camera.position.z = camRadius * Math.sin(time);
+  }
+  camera.position.y = camHeight;
+  camera.lookAt(0, 0, 0);
+  renderer.render(scene, camera);
+}
+
+/* ------- Utilities ------- */
+function disposeObjectDeep(obj) {
+  obj.traverse((n) => {
+    if (n.userData && n.userData.mixer) n.userData.mixer.stopAllAction?.();
+    if (n.isMesh) {
+      if (n.geometry) n.geometry.dispose();
+      if (Array.isArray(n.material)) n.material.forEach(m => m && m.dispose && m.dispose());
+      else if (n.material && n.material.dispose) n.material.dispose();
+    }
+  });
+}
+
+/* ------- Bootstrap: warte, bis die Bridge bereit ist ------- */
+(function startWhenBridgeReady(){
+  if (window.THREE && window.GLTFLoader && window.SkeletonUtils) {
+    init();
+  } else {
+    window.addEventListener('three-bridge-ready', init, { once: true });
+  }
+})();
+
+function toggleSettingsPanel() {
+  const panel = document.getElementById('settingsPanel');
+  const btn   = document.getElementById('settingsToggle');
+  settingsOpen = !settingsOpen;
+
+  if (settingsOpen) {
+    panel.classList.remove('closed');
+  } else {
+    panel.classList.add('closed');
+  }
+  // Button-Text bleibt immer ⚙, daher hier nichts mehr ändern
+}
+
+function loadQuizResults() {
+  const ref = database.ref('crest_quiz');
+  d3.select('#quizResultsTable').style("display","block");
+  ref.once('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    const container = document.getElementById('quizResultsTable');
+    if (!container) return;
+
+    let html = `
+      <table style="border-collapse:collapse; margin-top:10px;">
+        <thead>
+          <tr>
+            <th style="border:1px solid #ccc; padding:4px 8px;">Name</th>
+            <th style="border:1px solid #ccc; padding:4px 8px;">Result (%)</th>
+              <th style="border:1px solid #ccc; padding:4px 8px;">Accuracy (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    Object.keys(data).forEach((name) => {
+      const entry = data[name] || {};
+      const score  = entry.score || 0;
+      const accu   = entry.accuracy || 0;
+
+      html += `
+        <tr>
+          <td style="border:1px solid #ccc; padding:4px 8px;">${name}</td>
+          <td style="border:1px solid #ccc; padding:4px 8px;">${score.toFixed(1)} %</td>
+            <td style="border:1px solid #ccc; padding:4px 8px;">${accu.toFixed(1)} %</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    //container.innerHTML = html;
+document.body.innerHTML = html
+
+  }, (err) => {
+    console.error("Error loading quiz results:", err);
+  });
+}
+
+function showProgressOverlay() {
+  const el = document.getElementById("progressOverlay");
+  const total = multiQuizRounds;
+  const current = multiQuizCurrent;
+  const correct = multiQuizCorrect;
+  const remaining = total - current;
+
+ el.textContent =
+  'Completed: ' + current + ' of ' + total + '\n' +
+  'Result: ' + Math.round((correct/current) * 100) + '%\n' +
+  'Accuracy: ' + Math.round(multiQuizAccu) + '%';
+    el.style.display = "block";
+
+  
+}
+
+function lowerArmsMale3(model) {
+  // Oberarme
+  const lUpper = model.getObjectByName("LeftArm_013");
+  const rUpper = model.getObjectByName("RightArm_039");
+
+  // Unterarme – es gibt mehrere Varianten, wir nehmen was wir finden
+  const lFore =
+    model.getObjectByName("LeftForeArm_014") ||
+    model.getObjectByName("LeftForeArm1_015") ||
+    model.getObjectByName("LeftForeArm2_016");
+
+  const rFore =
+    model.getObjectByName("RightForeArm_040") ||
+    model.getObjectByName("RightForeArm1_041") ||
+    model.getObjectByName("RightForeArm2_042");
+
+  // Erst Rotationen neutralisieren
+  if (lUpper) lUpper.rotation.set(0, 0, 0);
+  if (rUpper) rUpper.rotation.set(0, 0, 0);
+  if (lFore)  lFore.rotation.set(0, 0, 0);
+  if (rFore)  rFore.rotation.set(0, 0, 0);
+
+  // Dann Arme nach unten drehen (Winkel ggf. anpassen)
+  // Wenn er noch zu sehr "schräg" ist: 0.8 → 1.0, wenn zu weit unten: 0.8 → 0.6
+  if (lUpper) lUpper.rotation.x = 1.2;
+  if (lFore)  lFore.rotation.x  = 0.5;
+
+  if (rUpper) rUpper.rotation.x = 1.2;
+  if (rFore)  rFore.rotation.x  = 0.5;
+}
+
+</script>
+
+</body>
+</html>

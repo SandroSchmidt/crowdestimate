@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>GLB Viewer (ohne CDN)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
+    header {
+      padding: .5rem .75rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+    }
+    header .spacer { flex: 1; }
+    #dropzone {
+      border: 1px dashed #bbb;
+      padding: .25rem .5rem;
+      border-radius: 6px;
+      background: #fff;
+    }
+    #info {
+      font-size: .9rem; color: #555;
+    }
+    canvas { display:block; }
+    #progress {
+      position: absolute; right: .75rem; top: .75rem;
+      background: rgba(0,0,0,.65); color: #fff; font: 12px/1.2 system-ui, sans-serif;
+      padding: .4rem .55rem; border-radius: 6px; display:none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <strong>GLB Viewer</strong>
+      <span id="info">Lädt standardmäßig: <code>low_poly_person.glb</code></span>
+      <span class="spacer"></span>
+      <label id="dropzone">Datei öffnen
+        <input id="file" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" style="display:none" />
+      </label>
+    </header>
+    <div id="viewer"></div>
+    <div id="progress">0 %</div>
+  </div>
+
+  <!-- Lokale Module: drei Dateien müssen neben dieser HTML liegen:
+       - three.module.js
+       - OrbitControls.js   (aus three/examples/jsm/controls/OrbitControls.js)
+       - GLTFLoader.js      (aus three/examples/jsm/loaders/GLTFLoader.js)
+  -->
+  <script type="module">
+    import * as THREE from './three.module.js';
+    import { OrbitControls } from './OrbitControls.js';
+    import { GLTFLoader } from './GLTFLoader.js';
+
+    const viewer = document.getElementById('viewer');
+    const progressEl = document.getElementById('progress');
+    const infoEl = document.getElementById('info');
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    viewer.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xeeeeee);
+
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.01, 2000);
+    camera.position.set(2.5, 2.0, 3.0);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 1.0, 0);
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+    hemi.position.set(0, 1, 0);
+    scene.add(hemi);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+    dir.position.set(3, 5, 2);
+    dir.castShadow = true;
+    scene.add(dir);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(50, 50),
+      new THREE.MeshPhongMaterial({ color: 0xffffff, depthWrite: false })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
+    ground.receiveShadow = true;
+    ground.visible = true;
+    scene.add(ground);
+
+    const grid = new THREE.GridHelper(10, 20, 0x444444, 0xcccccc);
+    grid.position.y = 0.001;
+    scene.add(grid);
+
+    function resize() {
+      const w = viewer.clientWidth || window.innerWidth;
+      const h = (window.innerHeight - document.querySelector('header').offsetHeight);
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    const loader = new GLTFLoader();
+
+    function showProgress(percent) {
+      if (!isFinite(percent)) return;
+      progressEl.style.display = 'block';
+      progressEl.textContent = Math.round(percent) + ' %';
+      if (percent >= 100) setTimeout(() => { progressEl.style.display = 'none'; }, 400);
+    }
+
+    function frameObject(object3d) {
+      const box = new THREE.Box3().setFromObject(object3d);
+      if (!box.isEmpty()) {
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fitDist = maxDim / (2 * Math.tan(Math.PI * camera.fov / 360));
+        const fitOffset = 1.2;
+        const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+        camera.position.copy(dir.multiplyScalar(fitDist * fitOffset).add(center));
+        controls.target.copy(center);
+        controls.update();
+      }
+    }
+
+    let currentModel;
+    function clearModel() {
+      if (!currentModel) return;
+      scene.remove(currentModel);
+      currentModel.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.geometry?.dispose?.();
+          if (obj.material?.isMaterial) obj.material.dispose();
+          else if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        }
+      });
+      currentModel = null;
+    }
+
+    function addModel(gltf) {
+      clearModel();
+      currentModel = gltf.scene || gltf.scenes?.[0];
+      currentModel.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.castShadow = true;
+          obj.receiveShadow = true;
+        }
+      });
+      scene.add(currentModel);
+      frameObject(currentModel);
+    }
+
+    function loadFromUrl(url) {
+      infoEl.textContent = 'Lade: ' + url;
+      loader.load(
+        url,
+        (gltf) => { addModel(gltf); infoEl.textContent = 'Geladen: ' + url; showProgress(100); },
+        (xhr) => { if (xhr.total) showProgress((xhr.loaded / xhr.total) * 100); },
+        (err) => {
+          console.error(err);
+          infoEl.textContent = 'Fehler beim Laden. Wähle oben "Datei öffnen", um lokal zu laden.';
+          progressEl.style.display = 'none';
+        }
+      );
+    }
+
+    loadFromUrl('low_poly_person.glb');
+
+    const fileInput = document.getElementById('file');
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      infoEl.textContent = 'Lade lokale Datei: ' + file.name;
+      const arrayBuffer = await file.arrayBuffer();
+      loader.parse(
+        arrayBuffer, '', 
+        (gltf) => { addModel(gltf); infoEl.textContent = 'Geladen (lokal): ' + file.name; },
+        (err) => { console.error(err); infoEl.textContent = 'Fehler beim Laden der lokalen Datei.'; }
+      );
+    });
+  </script>
+</body>
+</html>
