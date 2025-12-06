@@ -15,8 +15,9 @@
   <meta property="og:title" content="Crowdreport – Crowd Management Tools">
   <meta property="og:description" content="Forschungs- und Simulationsprojekt für Crowd Management und Crowd Safety.">
   <meta property="og:url" content="https://crowdreport.net/">
+ <link rel="stylesheet" href="style.css" />
 
-  <title>crowdestimate v 3.5</title>
+  <title>crowdestimate v 3.8</title>
  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -49,181 +50,6 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 
- <style>
-   body {
-  margin: 0;
-  overflow: hidden;
-  font-family: sans-serif;
-}
-
-/* Canvas nicht vom normalen Flow beeinflussen */
-canvas {
-  position: fixed;   /* oder absolute */
-  top: 0;
-  left: 0;
-  width: 80%;
-  height: 100%;
-  z-index: 0;
-  display: block;
-}
-
-/* Logo + Schriftzug im Vordergrund linksbündig */
-#logobild {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  height: 10%;         /* nach Bedarf */
-  z-index: 200;
-}
-
-#logoText {
-  position: fixed;
-  top: 4%;           /* leicht neben/unter dem Logo */
-  left: 8%;          /* Abstand zum Logo */
-  font-size: 24px;
-  z-index: 200;}
-    #sliderContainer {
-  position: fixed;              /* optional, aber meist sinnvoller als absolute */
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255,255,255,0.9);
-  padding: 10px;
-  border-radius: 8px;
-  z-index: 120;                 /* WICHTIG: über dem Canvas */
-}
- #settingsPanel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 20%;
-  height: 100%;
-  background: #eee;
-  padding: 10px;
-  box-sizing: border-box;
-  overflow-y: auto;
-  border-left: 1px solid #ccc;
-  z-index: 150;
-  transform: translateX(0);              /* sichtbar */
-  transition: transform 0.3s ease-in-out;
-}
-
-/* eingeklappter Zustand */
-#settingsPanel.closed {
-  transform: translateX(100%);
-}
-    .btn { display: inline-block; margin: 5px 5px 5px 0; padding: 6px 10px;
-      background: #ccc; border: none; border-radius: 4px; cursor: pointer; }
-    #densityDisplay {
-      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-      background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 8px;
-      font-weight: bold; font-size: 18px; z-index: 100;
-    }
-#topRightButtons {
-  position: fixed;
-  display:none;
-  top: 10px;
-  right: 10px;
-  z-index: 160;
-  display: flex;
-  gap: 10px;      /* Abstand zwischen Buttons */
-}
-
-#topRightButtons .btn {
-  padding: 6px 10px;
-}
-    @media (max-width: 768px) {
-  /* 3D-Canvas: volle Breite, etwas kleinere Höhe wirkt oft besser */
-  canvas {
-    width: 100%;
-    height: 60%;
-  }
-
-  /* Settings-Panel als Overlay von oben, volle Breite */
-  #settingsPanel {
-    width: 100%;
-    height: 40%;
-    bottom: 0;
-    display:none;
-    top: auto;
-    right: 0;
-    left: 0;
-    border-left: none;
-    border-top: 1px solid #ccc;
-    background: rgba(238, 238, 238, 0.97);
-  }
-
-  /* Toggle-Button besser erreichbar */
-#settingsToggle {
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  text-align: center;
-}
-
-  /* Dichte-Anzeige etwas kleiner und höher */
-  #densityDisplay {
-    top: 45px;
-    font-size: 14px;
-    padding: 4px 8px;
-  }
-
-  /* Slider unten, aber etwas breiter */
-  #sliderContainer {
-    bottom: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    padding: 8px;
-  }
-
-  /* Logo + Text etwas kleiner */
-  #logobild {
-    top: 5px;
-    left: 5px;
-    height: 8%;
-  }
-
-  #logoText {
-    top: 5px;
-    left: 20%;
-    font-size: 18px;
-  }
-
-  /* Buttons etwas größer antippbar */
-  .btn {
-    padding: 8px 10px;
-    font-size: 14px;
-  }
-
-  /* Quiz-Overlay zentriert und lesbar */
-  #quizContainer {
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 400px;
-    padding: 16px;
-  }
-
-  /* Range-Anzeige fix, wackelt nicht */
-  #guessrange {
-    display: inline-block;
-    width: 8ch;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  /* Highscore-Box ggf. schmaler */
-  #quizResultsTable {
-    left: 5%;
-    right: 5%;
-    width: 90%;
-  }
-}
-
-  </style>
 <body>
   <div id="progressOverlay"
      style="display:none;
@@ -256,9 +82,9 @@ canvas {
   <button class="btn" id="testButton" onclick="startDensityQuiz(10)">Test</button>
   <button class="btn" id="settingsToggle">Settings</button>
 </div>
-    <img id="logobild" src="./img/seg_logo.jpg" onclick="loadQuizResults()">
-  <span id="logoText" style="font-family: 'MuseoSlab-500', sans-serif;" >crowdestimate</span>
-  <div id="densityDisplay">people/m²</div>
+    <img id="logobild" src="./crestimate/seg_logo.jpg" onclick="loadQuizResults()">
+  <span id="logoText" style="font-family: 'MuseoSlab-500', sans-serif; color: black;" >crowdestimate</span>
+  <div style="color: white;" id="densityDisplay">people/m²</div>
 
 <div id="settingsPanel">
   <p><u>Camera Settings:</u></p>
@@ -322,9 +148,9 @@ canvas {
 
 <div id="quizContainer" style="display:none; position:absolute; top:90%; left:50%; transform:translate(-50%,-50%);
  background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
-  <p><strong>Estimate Density (people/m²):</strong></p>
+  <p style="color:black"><strong>estimate density (people/m²):</strong></p>
   <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(this.value + ' p/m²' )">
-  <span style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" id="guessrange" ></span>
+  <span style="color:black" style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" id="guessrange" ></span>
 
   <button id="btnSubmitGuess">Submit</button><br>
   <span id="quizFeedback" style="color: white;">T</span>
@@ -991,7 +817,7 @@ function createPersonModel_Fallback() {
 }
 
 function updatePeople(count) {
-  d3.select("#densityDisplay").style("color","black");
+  d3.select("#densityDisplay").style("color","white");
   const delta = count - lastCount;
 
 

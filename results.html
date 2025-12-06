@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>crowdestimate – Results</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="page">
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            crowdestimate
+            <span class="badge">Results</span>
+          </div>
+          <div class="card-subtitle">
+           overview of useres that completed the test
+          </div>
+        </div>
+      </div>
+
+      <div id="status" class="status">Verbinde mit Firebase …</div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table id="resultsTable">
+            <thead id="resultsHead">
+            <!-- wird per JS gefüllt -->
+            </thead>
+            <tbody id="resultsBody">
+            <!-- wird per JS gefüllt -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="emptyState" class="empty-state" style="display:none;">
+        no data available
+      </div>
+    </div>
+  </div>
+</div>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+<!-- Firebase v8 (kompatibel mit deinen bisherigen Projekten) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+  // TODO: Hier deine echte Konfiguration eintragen (wie in deinen anderen Dateien)
+  // Diese Daten findest du in der Firebase Console unter "Projekteinstellungen" → "Ihre Apps".
+const firebaseConfig = {
+  apiKey: "AIzaSyBOOdW1SHCwBZSchUJ7DfJZ1a7-dEYTvuQ",
+  authDomain: "crowdcount-678c8.firebaseapp.com",
+  databaseURL: "https://crowdcount-678c8-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "crowdcount-678c8",
+  storageBucket: "crowdcount-678c8.appspot.com",
+  messagingSenderId: "1020533758948",
+  appId: "1:1020533758948:web:23ec6e175dff3b5eedc5f1",
+  measurementId: "G-00674BETEZ"
+};
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+
+  var db = firebase.database();
+
+  // TODO: Pfad anpassen, falls deine Struktur anders heißt.
+  // Beispiel: /crowdestimate/results oder /crowdestimate
+  var resultsRef = db.ref("crest_quiz");
+
+  var statusEl = document.getElementById("status");
+  var headEl = document.getElementById("resultsHead");
+  var bodyEl = document.getElementById("resultsBody");
+  var emptyEl = document.getElementById("emptyState");
+
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle("error", !!isError);
+  }
+
+  // Hilfsfunktion: generiert dynamisch Spalten aus allen Keys
+  function buildTable(rows) {
+    bodyEl.innerHTML = "";
+    headEl.innerHTML = "";
+
+    if (!rows.length) {
+      emptyEl.style.display = "block";
+      return;
+    } else {
+      emptyEl.style.display = "none";
+    }
+
+    // Alle Keys sammeln (inkl. id)
+    var allKeys = new Set(["id"]);
+    rows.forEach(function(row) {
+      Object.keys(row).forEach(function(k) {
+        allKeys.add(k);
+      });
+    });
+
+    var columns = Array.from(allKeys);
+console.log("columns", rows);
+    // ein bisschen sortieren: id, timestamp/time zuerst
+    columns.sort(function(a, b) {
+      var order = ["id", "timestamp", "time", "createdAt", "gate", "user", "estimate", "min", "max"];
+      var ia = order.indexOf(a);
+      var ib = order.indexOf(b);
+      if (ia === -1 && ib === -1) return a.localeCompare(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+    // Kopfzeile
+    var trHead = document.createElement("tr");
+    columns.forEach(function(col) {
+      var th = document.createElement("th");
+      th.textContent = col;
+      trHead.appendChild(th);
+    });
+    headEl.appendChild(trHead);
+
+    // Body
+     tabelle= d3.select('#resultsBody')
+     tabelle.selectAll('*').remove()
+  for(i=0;i<rows.length;i++)
+    
+ { tr=tabelle.append('tr')
+     tr.append('td').text(rows[i].id || '')
+tr.append('td').text(
+  rows[i].timestamp 
+    ? new Date(rows[i].timestamp).toLocaleString("de-DE") 
+    : ''
+);
+
+
+     tr.append('td').text(rows[i].accuracy + " %"|| '')
+    tr.append('td').text(rows[i].score+ " %" || '')
+}
+    ;
+  }
+
+  setStatus("loading data…");
+
+  // Live-Listener
+  resultsRef.on("value", function(snapshot) {
+    var data = snapshot.val();
+    if (!data) {
+      buildTable([]);
+      setStatus("Verbunden – keine Einträge gefunden.");
+      return;
+    }
+
+    // Objekt in Array mit id umwandeln
+    var rows = Object.keys(data).map(function(key) {
+      var value = data[key];
+      if (value && typeof value === "object") {
+        return Object.assign({ id: key }, value);
+      } else {
+        return { id: key, value: value };
+      }
+    });
+
+    // optional sortieren: neueste zuerst, falls es ein Feld timestamp / createdAt gibt
+    rows.sort(function(a, b) {
+      var ta = a.timestamp || a.createdAt || 0;
+      var tb = b.timestamp || b.createdAt || 0;
+      return tb - ta;
+    });
+
+    buildTable(rows);
+    setStatus("entrys updated (" + rows.length + " entrys).");
+  }, function(error) {
+    console.error(error);
+    setStatus("error loading data: " + error.message, true);
+  });
+</script>
+</body>
+</html>

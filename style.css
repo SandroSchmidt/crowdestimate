@@ -1,0 +1,498 @@
+/* =========================================================
+   Global Theme – angelehnt an leaderboard/results.html
+   (von allen Seiten genutzt)
+   ========================================================= */
+
+:root {
+  --bg: #0f172a;
+  --card-bg: #0b1220;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.15);
+  --border: #1e293b;
+  --text: #e5e7eb;
+  --text-muted: #94a3b8;
+  --row-alt: #020617;
+  --danger: #f97373;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #1e293b, #020617 55%);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* Links allgemein */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================
+   Gemeinsame Card-/Page-Struktur (v.a. für results.html)
+   ========================================================= */
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.card {
+  background: radial-gradient(circle at top left, #1e293b 0, #020617 55%);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(15, 23, 42, 0.8);
+  padding: 20px 22px 24px;
+  backdrop-filter: blur(16px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.card-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.card-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.status.error {
+  color: var(--danger);
+}
+
+/* Buttons – global */
+
+.btn {
+  display: inline-block;
+  margin: 5px 5px 5px 0;
+  padding: 6px 10px;
+  background: #1f2937;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.btn:hover {
+  background: #111827;
+}
+
+/* =========================================================
+   Tabellen-Layout (results.html, aber global nutzbar)
+   ========================================================= */
+
+.table-wrapper {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.9);
+  overflow: hidden;
+  max-height: 70vh;
+  position: relative;
+}
+
+.table-scroll {
+  overflow: auto;
+  max-height: 70vh;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #020617;
+}
+
+th,
+td {
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--row-alt);
+}
+
+tbody tr:hover {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   3D-Seite / index.html – spezifische Styles
+   (Canvas, Settings-Panel, Quiz, Logo etc.)
+   ========================================================= */
+
+/* 3D-Canvas-Fenster */
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 80%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+/* Logo oben links */
+
+#logobild {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  height: 10%;
+  z-index: 200;
+  cursor: pointer;
+}
+
+#logoText {
+  position: fixed;
+  top: 4%;
+  left: 8%;
+  font-size: 24px;
+  z-index: 200;
+}
+
+/* Dichteanzeige oben */
+
+#densityDisplay {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.96);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 18px;
+  z-index: 100;
+  border: 1px solid var(--border);
+}
+
+/* Slider unten */
+
+#sliderContainer {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.96);
+  padding: 10px 14px;
+  border-radius: 999px;
+  z-index: 120;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+/* Settings-Panel rechts */
+
+#settingsPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 20%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.98);
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  z-index: 150;
+  transform: translateX(0);
+  transition: transform 0.3s ease-in-out;
+  font-size: 0.85rem;
+}
+
+#settingsPanel p,
+#settingsPanel label,
+#settingsPanel legend {
+  color: var(--text);
+}
+
+#settingsPanel hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+#settingsPanel fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+}
+
+#settingsPanel legend {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Eingeklappter Zustand */
+
+#settingsPanel.closed {
+  transform: translateX(100%);
+}
+
+/* Buttons oben rechts (Test / Settings) */
+
+#topRightButtons {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 160;
+  display: flex;
+  gap: 10px;
+}
+
+#topRightButtons .btn {
+  padding: 6px 10px;
+}
+
+/* Quiz-Ergebnisse-Overlay (Index) */
+
+#quizResultsTable {
+  position: fixed;
+  top: 15%;
+  left: 20px;
+  background: rgba(15, 23, 42, 0.98);
+  padding: 10px;
+  border: 1px solid var(--border);
+  z-index: 200;
+}
+
+/* Fortschrittsanzeige beim Quiz */
+
+#progressOverlay {
+  display: none;
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.98);
+  color: var(--text);
+  padding: 20px 30px;
+  border-radius: 10px;
+  font-size: 22px;
+  z-index: 2000;
+  text-align: center;
+  white-space: pre-line;
+}
+
+/* Quiz-Container unten (Schieberegler) */
+
+#quizContainer {
+  display: none;
+  position: absolute;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #020617;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(15, 23, 42, 0.85);
+  z-index: 999;
+  border: 1px solid var(--border);
+}
+
+#quizContainer strong {
+  font-size: 0.9rem;
+}
+
+#guessrange {
+  display: inline-block;
+  width: 8ch;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Quiz-Feedback (Text) */
+
+#quizFeedback {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* =========================================================
+   Test-Seite / test.html – spezifische Styles
+   ========================================================= */
+
+.box {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   Responsive Anpassungen
+   ========================================================= */
+
+@media (max-width: 768px) {
+  /* Card kompakter (v.a. results.html) */
+  .card {
+    padding: 16px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .table-wrapper {
+    max-height: 65vh;
+  }
+
+  /* 3D-Ansicht auf mobilen Geräten */
+
+  canvas {
+    width: 100%;
+    height: 60%;
+  }
+
+  #settingsPanel {
+    width: 100%;
+    height: 40%;
+    bottom: 0;
+    top: auto;
+    right: 0;
+    left: 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.97);
+  }
+
+  #densityDisplay {
+    top: 45px;
+    font-size: 14px;
+    padding: 4px 8px;
+  }
+
+  #sliderContainer {
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    padding: 8px;
+  }
+
+  #logobild {
+    top: 5px;
+    left: 5px;
+    height: 8%;
+  }
+
+  #logoText {
+    top: 5px;
+    left: 20%;
+    font-size: 18px;
+  }
+
+  .btn {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  #quizContainer {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+    padding: 16px;
+  }
+
+  #quizResultsTable {
+    left: 5%;
+    right: 5%;
+    width: 90%;
+  }
+}
