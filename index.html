@@ -149,8 +149,9 @@
 <div id="quizContainer" style="display:none; position:absolute; top:90%; left:50%; transform:translate(-50%,-50%);
  background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
   <p style="color:black"><strong>estimate density (people/m²):</strong></p>
-  <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(this.value + ' p/m²' )">
-  <span style="color:black" style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" id="guessrange" ></span>
+  <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(parseFloat(this.value).toFixed(1) + ' p/m²' )">
+  <span style="color:black" style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" 
+  id="guessrange" ></span>
 
   <button id="btnSubmitGuess">Submit</button><br>
   <span id="quizFeedback" style="color: white;">T</span>
@@ -590,7 +591,8 @@ function submitDensityGuess() {
   const totalArea = boxSize * boxSize;
   const obstacleArea = obstacleEnabled ? obstacleSize * obstacleSize : 0;
   const availableArea = totalArea - obstacleArea;
-  const trueDensity = availableArea > 0 ? (lastCount / availableArea) : Infinity;
+  trueDensity = availableArea > 0 ? (lastCount / availableArea) : Infinity;
+  trueDensity = parseFloat(trueDensity.toFixed(1));
   const error = Math.abs(guess - trueDensity);
   const feedback = document.getElementById("quizFeedback");
 
@@ -603,10 +605,10 @@ function submitDensityGuess() {
   }
   if (error < 0.3) {
     multiQuizCorrect++
-    feedback.textContent = `Good! The Exact value is ${trueDensity.toFixed(2)}.`;
+    feedback.textContent = `Good! The Exact value is ${trueDensity}`;
     feedback.style.color = "green";
   } else {
-    feedback.textContent = `Incorrect! The Exact value is ${trueDensity.toFixed(2)}.`;
+    feedback.textContent = `Incorrect! The Exact value is ${trueDensity}`;
     feedback.style.color = "orange";
   }
   nowaccu = Math.max(0,(1-error)*100)
@@ -646,13 +648,13 @@ if (playerName && playerName.trim() !== "") {
           document.body.innerHTML =
             '<div style="position:fixed;top:50%;left:50%;' +
             'transform:translate(-50%,-50%);font-family:sans-serif;' +
-            'font-size:24px;text-align:center;">result saved</div>';
+            'font-size:24px;text-align:center;color:black">result saved</div>';
         }
 } else {
   document.body.innerHTML =
    '<div style="position:fixed;top:50%;left:50%;' +
             'transform:translate(-50%,-50%);font-family:sans-serif;' +
-            'font-size:24px;text-align:center;">Results have not been saved. Press F5 to retry.</div>';
+            'font-size:24px;text-align:center;color:black">Results have not been saved. Press F5 to retry.</div>';
           
 }}
 

@@ -166,11 +166,11 @@ tr.append('td').text(
     });
 
     // optional sortieren: neueste zuerst, falls es ein Feld timestamp / createdAt gibt
-    rows.sort(function(a, b) {
-      var ta = a.timestamp || a.createdAt || 0;
-      var tb = b.timestamp || b.createdAt || 0;
-      return tb - ta;
-    });
+   rows.sort(function(a, b) {
+  const aa = a.accuracy || 0;
+  const bb = b.accuracy || 0;
+  return bb - aa;   // höchster Accuracy-Wert zuerst
+});
 
     buildTable(rows);
     setStatus("entrys updated (" + rows.length + " entrys).");
