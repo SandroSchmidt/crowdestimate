@@ -66,23 +66,13 @@
             z-index:2000;
             text-align:center;">
 </div>  
-<div id="quizResultsTable"
-     style="display: none;
-       position: fixed;
-       top: 15%;
-       left: 20px;
-       background: white;
-       padding: 10px;
-       border: 1px solid #ccc;
-       z-index: 200;"
-     onclick="d3.select('#quizResultsTable').style('display','none')">
-</div>
+
 
  <div id="topRightButtons">
-  <button class="btn" id="testButton" onclick="startDensityQuiz(10)">Test</button>
+ 
   <button class="btn" id="settingsToggle">Settings</button>
 </div>
-    <img id="logobild" src="./crestimate/seg_logo.jpg" onclick="loadQuizResults()">
+    <img id="logobild" src="./crestimate/seg_logo.jpg" >
   <span id="logoText" style="font-family: 'MuseoSlab-500', sans-serif; color: black;" >crowdestimate</span>
   <div style="color: white;" id="densityDisplay">people/m²</div>
 
@@ -137,6 +127,8 @@
   </select>
 </div>
   <hr>
+
+<button id="btnExportJpeg" class="btn">Export View (JPEG)</button>
   <button id="btnQuiz" class="btn" onclick="startDensityQuiz(1)">Estimate Random Density</button>
   
 </div>
@@ -167,7 +159,7 @@ let multiQuizCorrect = 0;
 let scene, camera, renderer, personGroup, mainGround;
 const boxSize = 10;
 let lastCount = 0;
-let autoRotate = true;
+let autoRotate = false;
 let rotateSpeed = 0.0001;
 let camRadius = 15;
 let camHeight = 10;
@@ -176,8 +168,8 @@ let shadowEnabled = true;
 let obstacleEnabled = false;
 let obstacleMesh = null;
 let directionalLight, ambientLight;
-let arrowHelper = null;
-let arrowVisible = true;
+let arrowHelper = false;
+let arrowVisible = false;
 
 let obstacleColor = "steelblue";
 let obstacleSize = 3;
@@ -222,6 +214,46 @@ let draggingIdx = 0;
 let useRealisticHumans = false; // false = Minimal, true = Realistic
 let settingsOpen = false;
 
+  d3.select("#densityDisplay")
+    .style("cursor", "pointer")
+    .on("click", handleDensityClick);
+
+    function handleDensityClick() {
+  const totalArea = boxSize * boxSize;
+  const a1 = obstacleEnabled  ? obstacleSize  * obstacleSize  : 0;
+  const a2 = obstacleEnabled2 ? obstacleSize2 * obstacleSize2 : 0;
+  const availableArea = totalArea - a1 - a2;
+
+  if (availableArea <= 0) {
+    alert("Aktuell ist keine freie Fläche vorhanden (Hindernisse zu groß).");
+    return;
+  }
+
+  // aktuellen Wert aus dem Display als Default nehmen
+  const displayText = d3.select("#densityDisplay").text() || "";
+  const currentDensity = parseFloat(displayText); // "1.23 people/m²" → 1.23
+  const defaultValue = isFinite(currentDensity) ? currentDensity.toFixed(1) : "1.0";
+
+  let input = prompt("enter density (0.0–2.5 people/m² ):", defaultValue);
+  if (input === null) return;   // Abbruch
+
+  // Komma → Punkt
+  input = input.replace(",", ".");
+  const value = parseFloat(input);
+
+  if (isNaN(value) || value < 0 || value > 2.5) {
+    alert("is limited 0.0 - 2.5.");
+    return;
+  }
+
+  // Ziel-Personenzahl berechnen
+  const targetCount = Math.round(value * availableArea);
+
+  // Slider & Anzeige mit D3 setzen
+  d3.select("#slider").property("value", targetCount);
+  updatePeople(targetCount);
+  d3.select("#personCountDisplay").text(formatPersons(targetCount));
+}
 
 const formatPersons = (n) => `${n} ${n===1 ? "people" : "people"}`;
 const firebaseConfig = {
@@ -284,6 +316,9 @@ function refreshPeople(){
 
 /* ------- Init ------- */
 function init() {
+    d3.select("#btnExportJpeg")
+    .on("click", exportCanvasAsJpeg);
+
  const settingsToggle = document.getElementById('settingsToggle');
   if (settingsToggle) {
     settingsToggle.addEventListener('click', toggleSettingsPanel);
@@ -303,10 +338,13 @@ function init() {
   scene.background = new THREE.Color(0xf0f0f0);
 
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(15, 10, 15);
+  camera.position.set(10, 12, 10);
   camera.lookAt(0, 0, 0);
+renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  preserveDrawingBuffer: true
+});
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
@@ -335,6 +373,7 @@ function init() {
     5, 0xffaa00, 1, 0.5
   );
   scene.add(arrowHelper);
+arrowHelper.visible = false;
 
   const outerSize = boxSize + 2;
   const outerGround = new THREE.Mesh(
@@ -367,11 +406,7 @@ function init() {
   document.getElementById("btnAmbient").addEventListener("click", () => setLightMode("ambient"));
   document.getElementById("btnDirectional").addEventListener("click", () => setLightMode("directional"));
   document.getElementById("btnDisco").addEventListener("click", () => setLightMode("disco"));
-  document.getElementById("toggleArrow").addEventListener("click", () => {
-    arrowVisible = !arrowVisible;
-    arrowHelper.visible = arrowVisible && directionalLight.visible;
-    document.getElementById("toggleArrow").style.background = arrowVisible ? "#fc6" : "#ccc";
-  });
+
 
   document.getElementById("obstacleHeight").addEventListener("input", e => {
     obstacleHeight = parseFloat(e.target.value);
@@ -487,7 +522,7 @@ loadModel('female', femalePath);
 }
 
 if (params.get('results') == 'true') {loadQuizResults()}
-
+setLightMode("directional")
 }
 /* ------- GLB loading ------- */
 function loadHumanGLB() {
@@ -1059,53 +1094,6 @@ function toggleSettingsPanel() {
   // Button-Text bleibt immer ⚙, daher hier nichts mehr ändern
 }
 
-function loadQuizResults() {
-  const ref = database.ref('crest_quiz');
-  d3.select('#quizResultsTable').style("display","block");
-  ref.once('value', (snapshot) => {
-    const data = snapshot.val() || {};
-    const container = document.getElementById('quizResultsTable');
-    if (!container) return;
-
-    let html = `
-      <table style="border-collapse:collapse; margin-top:10px;">
-        <thead>
-          <tr>
-            <th style="border:1px solid #ccc; padding:4px 8px;">Name</th>
-            <th style="border:1px solid #ccc; padding:4px 8px;">Result (%)</th>
-              <th style="border:1px solid #ccc; padding:4px 8px;">Accuracy (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    Object.keys(data).forEach((name) => {
-      const entry = data[name] || {};
-      const score  = entry.score || 0;
-      const accu   = entry.accuracy || 0;
-
-      html += `
-        <tr>
-          <td style="border:1px solid #ccc; padding:4px 8px;">${name}</td>
-          <td style="border:1px solid #ccc; padding:4px 8px;">${score.toFixed(1)} %</td>
-            <td style="border:1px solid #ccc; padding:4px 8px;">${accu.toFixed(1)} %</td>
-        </tr>
-      `;
-    });
-
-    html += `
-        </tbody>
-      </table>
-    `;
-
-    //container.innerHTML = html;
-document.body.innerHTML = html
-
-  }, (err) => {
-    console.error("Error loading quiz results:", err);
-  });
-}
-
 function showProgressOverlay() {
   const el = document.getElementById("progressOverlay");
   const total = multiQuizRounds;
@@ -1151,6 +1139,43 @@ function lowerArmsMale3(model) {
 
   if (rUpper) rUpper.rotation.x = 1.2;
   if (rFore)  rFore.rotation.x  = 0.5;
+}
+function exportCanvasAsJpeg() {
+  if (!renderer || !renderer.domElement) {
+    console.warn("Renderer noch nicht bereit.");
+    return;
+  }
+
+  // Aktuelle Dichte aus Display extrahieren, z.B. "1.23 people/m²"
+  let densityText = d3.select("#densityDisplay").text() || "";
+  let density = parseFloat(densityText);
+
+  // Fallback falls parsing fehlschlägt
+  if (!isFinite(density)) density = 0;
+
+  // Dateinamen-kompatibles Format
+  const densityStr = density.toFixed(2).replace(",", "."); 
+
+  // Finaler Dateiname
+  const filename = `crowdestimate_${densityStr}.jpeg`;
+
+  // Direkt vorher rendern
+  renderer.render(scene, camera);
+
+  try {
+    const dataUrl = renderer.domElement.toDataURL("image/jpeg", 0.92);
+
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.error("Canvas-Export fehlgeschlagen:", e);
+    alert("Export nicht möglich (Canvas evtl. tainted).");
+  }
 }
 
 </script>
