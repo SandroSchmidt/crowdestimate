@@ -453,8 +453,8 @@ canvas {
     position: fixed;
     top: -20vh;
     left: 0;
-    width: 40vw;
-    height: 55vh;       /* oberer Teil des Screens */
+    width: 100%;
+       /* oberer Teil des Screens */
     z-index: 0;
   }
 
@@ -536,7 +536,9 @@ width:80vw;
   bottom: 0;
   width: 100vw;
   padding: 16px;
-  background: #808187;
+  background: #546df5;
+  border-color: #020617;
+
   border-top: 1px solid var(--border);
   border-radius: 12px 12px 0 0;
 }
