@@ -509,7 +509,7 @@ width:80vw;
 
   #densityGuess {
     position: relative !important;
-    width: 70%;
+    width: 50%;
     padding: 12px;
     background: #fff;
     border-radius: 12px;
@@ -536,7 +536,7 @@ width:80vw;
   bottom: 0;
   width: 100vw;
   padding: 16px;
-  background: #020617;
+  background: #808187;
   border-top: 1px solid var(--border);
   border-radius: 12px 12px 0 0;
 }
