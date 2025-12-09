@@ -426,6 +426,22 @@ canvas {
     overflow: hidden;
   }
 
+#progressOverlay {
+  display: none;
+  position: fixed;
+  top: 10%;
+  left: 50%;
+width:80vw;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.98);
+  color: var(--text);
+  padding: 20px 30px;
+  border-radius: 10px;
+  font-size: 22px;
+  z-index: 2000;
+  text-align: center;
+  white-space: pre-line;
+}
   .card {
     padding: 16px;
   }
