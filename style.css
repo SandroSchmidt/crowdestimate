@@ -348,15 +348,7 @@ canvas {
 }
 
 /* Fortschrittsanzeige beim Quiz */
-#densityGuess {
-    position: relative !important;
-    width: 70%;
-    padding: 12px;
-    background: #fff;
-    border-radius: 12px;
-    box-sizing: border-box;
-    margin-top: 8px;
-}
+
 #progressOverlay {
   display: none;
 
@@ -437,27 +429,7 @@ canvas {
  
 
 
-#progressOverlay {
-  display: none;
-  position: fixed;
-  top: 30%;
-  left: 50%;
-width:80vw;
-  transform: translate(-50%, -50%);
-  background: rgba(15, 23, 42, 0.98);
-  color: var(--text);
-  padding: 20px 30px;
-  border-radius: 10px;
-  font-size: 22px;
-  z-index: 2000;
-      transition: opacity 0.6s ease;
-  text-align: center;
-  white-space: pre-line;
-}
-  #progressOverlay.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
+
   .card {
     padding: 16px;
   }
@@ -487,7 +459,27 @@ width:80vw;
   #settingsPanel {
     display:none;
   }
-
+#progressOverlay {
+  display: none;
+  position: fixed;
+  top: 30%;
+  left: 50%;
+width:80vw;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.98);
+  color: var(--text);
+  padding: 20px 30px;
+  border-radius: 10px;
+  font-size: 22px;
+  z-index: 2000;
+      transition: opacity 0.6s ease;
+  text-align: center;
+  white-space: pre-line;
+}
+  #progressOverlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
   #densityDisplay {
     top: 8px;
     font-size: 14px;
@@ -510,6 +502,16 @@ width:80vw;
     left: 5px;
     height: 32px;
   }
+
+  #densityGuess {
+    position: relative !important;
+    width: 70%;
+    padding: 12px;
+    background: #fff;
+    border-radius: 12px;
+    box-sizing: border-box;
+    margin-top: 8px;
+}
 
   #logoText {
     top: 5px;
