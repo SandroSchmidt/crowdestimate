@@ -1,7 +1,6 @@
 /* =========================================================
-   Global Theme – angelehnt an leaderboard/results.html
-   (von allen Seiten genutzt)
-   ========================================================= */
+   GLOBAL DEFAULTS
+========================================================= */
 
 :root {
   --bg: #0f172a;
@@ -25,111 +24,98 @@ html,
 body {
   margin: 0;
   padding: 0;
-}
-
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  height: 100%;
   background: radial-gradient(circle at top, #1e293b, #020617 55%);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
-  overflow-x: hidden;
-}
-
-/* Links allgemein */
-
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
 }
 
 /* =========================================================
-   Gemeinsame Card-/Page-Struktur (v.a. für results.html)
-   ========================================================= */
+   SIM + QUIZ LAYOUT – NEUE STRUKTUR
+========================================================= */
 
-.page {
+/* neuer Bereich für die 3D-Simulation */
+#simcontainer {
   width: 100%;
-  min-height: 100vh;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 50vh;
+  position: relative;
+  overflow: hidden;
+  background: black;
 }
 
-.container {
-  max-width: 1100px;
+/* Canvas gehört jetzt ausschließlich in den simcontainer */
+#simcontainer canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  margin: 0 auto;
+  height: 100%;
+  display: block;
 }
 
-.card {
-  background: radial-gradient(circle at top left, #1e293b 0, #020617 55%);
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  box-shadow:
-    0 18px 45px rgba(15, 23, 42, 0.9),
-    0 0 0 1px rgba(15, 23, 42, 0.8);
-  padding: 20px 22px 24px;
-  backdrop-filter: blur(16px);
+/* Quizbereich unter der Simulation */
+#quizContainer {
+  width: 100%;
+  height: 30vh;
+  background: #ffffff;
+  color: black;
+  padding: 16px;
+  box-sizing: border-box;
+
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+
+  display: none;   /* JS schaltet auf display:block */
+  z-index: 10;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 14px;
-  gap: 12px;
+/* === Inhalt im QuizContainer === */
+#quizContainer strong {
+  font-size: 0.9rem;
 }
 
-.card-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* =========================================================
+   HEADER, BUTTONS, UI
+========================================================= */
+
+#logoText {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 24px;
+  color: black;
+  z-index: 1000;
 }
 
-.badge {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  padding: 3px 8px;
+#densityDisplay {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.96);
+  padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 16px;
+  z-index: 1000;
 }
 
-.card-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+#topRightButtons {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
 }
-
-.status {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-}
-
-.status.error {
-  color: var(--danger);
-}
-
-/* Buttons – global */
 
 .btn {
-  display: inline-block;
-  margin: 5px 5px 5px 0;
-  padding: 6px 10px;
   background: #1f2937;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
   color: var(--text);
-  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .btn:hover {
@@ -137,8 +123,65 @@ a:hover {
 }
 
 /* =========================================================
-   Tabellen-Layout (results.html, aber global nutzbar)
-   ========================================================= */
+   SETTINGS PANEL (Desktop)
+========================================================= */
+
+#settingsPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.98);
+  border-left: 1px solid var(--border);
+  padding: 12px;
+  overflow-y: auto;
+  z-index: 900;
+}
+
+#settingsPanel.closed {
+  transform: translateX(100%);
+}
+
+/* =========================================================
+   SLIDER (normal mode)
+========================================================= */
+
+#sliderContainer {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.96);
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  z-index: 800;
+}
+
+/* =========================================================
+   PROGRESS OVERLAY
+========================================================= */
+
+#progressOverlay {
+  display: none;
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.98);
+  padding: 20px 30px;
+  border-radius: 10px;
+  font-size: 22px;
+  z-index: 2000;
+  text-align: center;
+  color: var(--text);
+}
+
+/* =========================================================
+   TABLES (für results.html, nicht verändert)
+========================================================= */
 
 .table-wrapper {
   border-radius: 14px;
@@ -146,7 +189,6 @@ a:hover {
   background: rgba(15, 23, 42, 0.9);
   overflow: hidden;
   max-height: 70vh;
-  position: relative;
 }
 
 .table-scroll {
@@ -156,398 +198,31 @@ a:hover {
 
 table {
   width: 100%;
-  border-collapse: collapse;
   min-width: 600px;
-}
-
-thead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #020617;
+  border-collapse: collapse;
 }
 
 th,
 td {
-  font-size: 0.85rem;
+  white-space: nowrap;
   padding: 8px 10px;
-  text-align: left;
-  white-space: nowrap;
-}
-
-th {
-  border-bottom: 1px solid var(--border);
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-tbody tr:nth-child(even) {
-  background-color: var(--row-alt);
-}
-
-tbody tr:hover {
-  background: rgba(15, 23, 42, 0.9);
-}
-
-.text-right {
-  text-align: right;
-}
-
-.text-muted {
-  color: var(--text-muted);
-}
-
-.empty-state {
-  padding: 16px;
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--text-muted);
 }
 
 /* =========================================================
-   3D-Seite / index.html – spezifische Styles
-   (Canvas, Settings-Panel, Quiz, Logo etc.)
-   ========================================================= */
-
-/* 3D-Canvas-Fenster */
-
-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 80%;
-  height: 100%;
-  z-index: 0;
-  display: block;
-}
-
-/* Logo oben links */
-
-#logobild {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  height: 10%;
-  z-index: 200;
-  cursor: pointer;
-}
-
-#logoText {
-  position: fixed;
-  top: 4%;
-  left: 8%;
-  font-size: 24px;
-  z-index: 200;
-}
-
-/* Dichteanzeige oben */
-
-#densityDisplay {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.96);
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 18px;
-  z-index: 100;
-  border: 1px solid var(--border);
-}
-
-/* Slider unten */
-
-#sliderContainer {
-  position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.96);
-  padding: 10px 14px;
-  border-radius: 999px;
-  z-index: 120;
-  border: 1px solid var(--border);
-  font-size: 0.85rem;
-}
-
-/* Settings-Panel rechts */
-
-#settingsPanel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 20%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.98);
-  padding: 10px;
-  box-sizing: border-box;
-  overflow-y: auto;
-  border-left: 1px solid var(--border);
-  z-index: 150;
-  transform: translateX(0);
-  transition: transform 0.3s ease-in-out;
-  font-size: 0.85rem;
-}
-
-#settingsPanel p,
-#settingsPanel label,
-#settingsPanel legend {
-  color: var(--text);
-}
-
-#settingsPanel hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 10px 0;
-}
-
-#settingsPanel fieldset {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  padding: 6px 8px;
-}
-
-#settingsPanel legend {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-/* Eingeklappter Zustand */
-
-#settingsPanel.closed {
-  transform: translateX(100%);
-}
-
-/* Buttons oben rechts (Test / Settings) */
-
-#topRightButtons {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 160;
-  display: flex;
-  gap: 10px;
-}
-
-#topRightButtons .btn {
-  padding: 6px 10px;
-}
-
-/* Quiz-Ergebnisse-Overlay (Index) */
-
-#quizResultsTable {
-  position: fixed;
-  top: 15%;
-  left: 20px;
-  background: rgba(15, 23, 42, 0.98);
-  padding: 10px;
-  border: 1px solid var(--border);
-  z-index: 200;
-}
-
-/* Fortschrittsanzeige beim Quiz */
-
-#progressOverlay {
-  display: none;
-
-  top: 50%;
-  left: 50%;
-
-  transform: translate(-50%, -50%);
-  background: rgba(15, 23, 42, 0.98);
-  color: var(--text);
-  padding: 20px 30px;
-  border-radius: 10px;
-  font-size: 22px;
-  z-index: 2000;
-  text-align: center;
-  white-space: pre-line;
-}
-
-/* Quiz-Container unten (Schieberegler) */
-
-#quizContainer {
-  display: none;
-  position: absolute;
-  top: 90%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 24px rgba(15, 23, 42, 0.85);
-  z-index: 999;
-  border: 1px solid var(--border);
-}
-
-#quizContainer strong {
-  font-size: 0.9rem;
-}
-
-#guessrange {
-  display: inline-block;
-  width: 8ch;
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* Quiz-Feedback (Text) */
-
-#quizFeedback {
-  display: inline-block;
-  margin-top: 4px;
-}
-
-/* =========================================================
-   Test-Seite / test.html – spezifische Styles
-   ========================================================= */
-
-.box {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-/* =========================================================
-   Responsive Anpassungen
-   ========================================================= */
+   RESPONSIVE (smartphones)
+========================================================= */
 
 @media (max-width: 768px) {
-  /* Kein Scrollen der Seite auf dem Handy */
-  html,
-  body {
-    height: 100%;
-    overflow: hidden;
-  }
 
- 
-
-#appLayout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-  .card {
-    padding: 16px;
-  }
-
-  .card-title {
-    font-size: 1.1rem;
-  }
-
-  .table-wrapper {
-    max-height: 65vh;
-  }
-
-  /* ===== 3D-Ansicht / Quiz-Ansicht ===== */
-
-  /* Canvas nimmt den oberen Bereich ein */
- canvas {
-   
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-
-    transform: translateY(-15vh);
-}
-  /* Settings-Panel als Unterkante-Overlay,
-     aber im Quiz-Modus blendest du es ja via JS aus */
   #settingsPanel {
-    display:none;
-  }
-#progressOverlay {
-  display: none;
-  position: fixed;
-  top: 30%;
-  left: 50%;
-width:80vw;
-  transform: translate(-50%, -50%);
-  background: rgba(15, 23, 42, 0.98);
-  color: var(--text);
-  padding: 20px 30px;
-  border-radius: 10px;
-  font-size: 22px;
-  z-index: 2000;
-      transition: opacity 0.6s ease;
-  text-align: center;
-  white-space: pre-line;
-}
-  #progressOverlay.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-  #densityDisplay {
-    top: 8px;
-    font-size: 14px;
-    padding: 4px 8px;
+    display: none; /* verstecken im Quiz */
   }
 
-  /* Slider-Leiste (normaler Modus, im Quiz wird sie von JS versteckt) */
   #sliderContainer {
-    position: fixed;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
     width: 90vw;
-    padding: 8px;
-    font-size: 0.85rem;
   }
-
-  #logobild {
-    top: 5px;
-    left: 5px;
-    height: 32px;
-  }
-
-  #densityGuess {
-    position: relative !important;
-    width: 50%;
-    padding: 12px;
-    background: #fff;
-    border-radius: 12px;
-    box-sizing: border-box;
-    margin-top: 8px;
-}
 
   #logoText {
-    top: 5px;
-    left: 0%;
     font-size: 18px;
   }
-
-  .btn {
-    padding: 8px 10px;
-    font-size: 14px;
-  }
-
-  /* Quiz-Container sitzt fest am unteren Rand,
-     nutzt die volle Breite und bleibt komplett sichtbar */
-#quizContainer {
-  position: fixed;
-  left: 0;
-  bottom: 10vh;        /* → im unteren Drittel (10–15vh ist ideal) */
-  width: 100vw;
-
-  padding: 16px;
-  background: #ffffff;
-  border-top: 1px solid var(--border);
-  border-radius: 12px 12px 0 0;
-
-  z-index: 999;        /* muss über dem Canvas liegen */
 }
-
-  #quizResultsTable {
-    left: 5%;
-    right: 5%;
-    width: 90%;
-  }
-}
-
