@@ -428,7 +428,11 @@ canvas {
 
  
 
-
+#appLayout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
   .card {
     padding: 16px;
@@ -526,19 +530,16 @@ width:80vw;
 
   /* Quiz-Container sitzt fest am unteren Rand,
      nutzt die volle Breite und bleibt komplett sichtbar */
-  #quizContainer {
-    position: fixed;
-    left: 50%;
-    bottom: 0;
-    top: auto;
-    transform: translateX(-50%);
-    width: 100vw;
-    max-width: none;
-    padding: 14px 16px;
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.85);
-    border-top: 1px solid var(--border);
-  }
+#quizContainer {
+  flex: 0 0 auto; /* Höhe = Inhalt */
+  position: relative; 
+  bottom: 0;
+  width: 100vw;
+  padding: 16px;
+  background: #020617;
+  border-top: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+}
 
   #quizResultsTable {
     left: 5%;
