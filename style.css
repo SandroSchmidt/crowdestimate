@@ -418,7 +418,13 @@ canvas {
    ========================================================= */
 
 @media (max-width: 768px) {
-  /* Card kompakter (v.a. results.html) */
+  /* Kein Scrollen der Seite auf dem Handy */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   .card {
     padding: 16px;
   }
@@ -431,43 +437,55 @@ canvas {
     max-height: 65vh;
   }
 
-  /* 3D-Ansicht auf mobilen Geräten */
+  /* ===== 3D-Ansicht / Quiz-Ansicht ===== */
 
+  /* Canvas nimmt den oberen Bereich ein */
   canvas {
-    width: 100%;
-    height: 60%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 55vh;       /* oberer Teil des Screens */
+    z-index: 0;
   }
 
+  /* Settings-Panel als Unterkante-Overlay,
+     aber im Quiz-Modus blendest du es ja via JS aus */
   #settingsPanel {
-    width: 100%;
-    height: 40%;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
     top: auto;
-    right: 0;
-    left: 0;
+    width: 100vw;
+    height: 45vh;       /* unterer Teil, falls sichtbar */
     border-left: none;
     border-top: 1px solid var(--border);
+    overflow-y: auto;
     background: rgba(15, 23, 42, 0.97);
   }
 
   #densityDisplay {
-    top: 45px;
+    top: 8px;
     font-size: 14px;
     padding: 4px 8px;
   }
 
+  /* Slider-Leiste (normaler Modus, im Quiz wird sie von JS versteckt) */
   #sliderContainer {
-    bottom: 5px;
+    position: fixed;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
+    width: 90vw;
     padding: 8px;
+    font-size: 0.85rem;
   }
 
   #logobild {
     top: 5px;
     left: 5px;
-    height: 8%;
+    height: 32px;
   }
 
   #logoText {
@@ -481,13 +499,20 @@ canvas {
     font-size: 14px;
   }
 
+  /* Quiz-Container sitzt fest am unteren Rand,
+     nutzt die volle Breite und bleibt komplett sichtbar */
   #quizContainer {
-    top: 50%;
+    position: fixed;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 400px;
-    padding: 16px;
+    bottom: 0;
+    top: auto;
+    transform: translateX(-50%);
+    width: 100vw;
+    max-width: none;
+    padding: 14px 16px;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.85);
+    border-top: 1px solid var(--border);
   }
 
   #quizResultsTable {
@@ -496,3 +521,4 @@ canvas {
     width: 90%;
   }
 }
+
