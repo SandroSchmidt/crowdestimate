@@ -541,3 +541,16 @@ width:80vw;
   }
 }
 
+@media (min-width: 768px) {
+    #quizContainer {
+        bottom: 50px;
+        transform: none;
+        width: 400px;
+        margin: 0 auto;
+    }
+
+    canvas {
+        transform: none;
+        height: 100vh;
+    }
+}
