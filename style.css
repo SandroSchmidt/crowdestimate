@@ -533,7 +533,7 @@ width:80vw;
 #quizContainer {
   flex: 0 0 auto; /* Höhe = Inhalt */
   position: relative; 
-  bottom: 0;
+  bottom: 10%;
   width: 100vw;
   padding: 16px;
   background: #ffffff;
