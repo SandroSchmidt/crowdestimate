@@ -432,7 +432,7 @@ canvas {
 #progressOverlay {
   display: none;
   position: fixed;
-  top: 10%;
+  top: 30%;
   left: 50%;
 width:80vw;
   transform: translate(-50%, -50%);
@@ -487,15 +487,14 @@ width:80vw;
   }
 
   /* Slider-Leiste (normaler Modus, im Quiz wird sie von JS versteckt) */
-  #sliderContainer {
-    position: fixed;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90vw;
-    padding: 8px;
-    font-size: 0.85rem;
-  }
+#sliderContainer {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    margin-top: 12px;
+}
 
   #logobild {
     top: 5px;
