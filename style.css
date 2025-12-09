@@ -538,7 +538,7 @@ width:80vw;
   padding: 16px;
   background: #ffffff;
   border-color: #020617;
-
+transform: translateY(-15vh);
   border-top: 1px solid var(--border);
   border-radius: 12px 12px 0 0;
 }
