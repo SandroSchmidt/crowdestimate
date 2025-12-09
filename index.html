@@ -349,10 +349,9 @@ renderer = new THREE.WebGLRenderer({
   preserveDrawingBuffer: true
 });
 
- renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
- if (window.innerWidth < 768) {
-    renderer.setPixelRatio(1);
-}
+ //renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+ renderer.setPixelRatio(1)
+// if (window.innerWidth < 768) {    renderer.setPixelRatio(1);}
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
