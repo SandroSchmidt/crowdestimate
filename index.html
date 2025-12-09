@@ -141,7 +141,7 @@
   <span id="personCountDisplay">1 people</span>
 </div>
 
-<div id="quizContainer" >
+<div id="quizContainer" style="display: block;">
   <p style="color:black"><strong>estimate density (people/m²):</strong></p>
   <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(parseFloat(this.value).toFixed(1) + ' p/m²' )">
   <span style="color:black" style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" 
