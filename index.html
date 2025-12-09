@@ -1187,7 +1187,13 @@ function exportCanvasAsJpeg() {
     alert("Export nicht möglich (Canvas evtl. tainted).");
   }
 }
-
+window.addEventListener("resize", () => {
+    const w = renderer.domElement.clientWidth;
+    const h = renderer.domElement.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
 </script>
 
 </body>
