@@ -304,6 +304,7 @@ function updateDensityDisplay(count) {
   const availableArea = totalArea - a1 - a2;
   const density = availableArea > 0 ? (count / availableArea).toFixed(2) : "∞";
   document.getElementById("densityDisplay").innerText = `${density} people/m²`;
+
 }
 function updateStyleButton(){
   const btn = document.getElementById("toggleStyle");
@@ -315,6 +316,7 @@ function refreshPeople(){
   const keep = lastCount;
   updatePeople(0);
   updatePeople(keep);
+  frameObject(camera, plane, 1.05);
 }
 
 /* ------- Init ------- */
@@ -1114,7 +1116,7 @@ function showProgressOverlay() {
     setTimeout(() => {
     el.classList.add("hidden");
   }, 3000);
-  
+
 }
 
 function lowerArmsMale3(model) {

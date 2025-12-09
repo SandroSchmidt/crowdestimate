@@ -348,11 +348,19 @@ canvas {
 }
 
 /* Fortschrittsanzeige beim Quiz */
-
+#densityGuess {
+    position: relative !important;
+    width: 70%;
+    padding: 12px;
+    background: #fff;
+    border-radius: 12px;
+    box-sizing: border-box;
+    margin-top: 8px;
+}
 #progressOverlay {
   display: none;
-  position: fixed;
-  top: 10%;
+
+  top: 50%;
   left: 50%;
 
   transform: translate(-50%, -50%);
@@ -487,14 +495,15 @@ width:80vw;
   }
 
   /* Slider-Leiste (normaler Modus, im Quiz wird sie von JS versteckt) */
-#sliderContainer {
-    position: relative !important;
-    bottom: auto !important;
-    left: auto !important;
-    transform: none !important;
-    width: 100% !important;
-    margin-top: 12px;
-}
+  #sliderContainer {
+    position: fixed;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
+    padding: 8px;
+    font-size: 0.85rem;
+  }
 
   #logobild {
     top: 5px;
