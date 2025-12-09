@@ -558,10 +558,5 @@ width:80vw;
     border: 1px solid var(--border);
     z-index: 9999;
   }
-}
 
-    canvas {
-        transform: none;
-        height: 100vh;
-    }
 }
