@@ -368,19 +368,7 @@ canvas {
 
 /* Quiz-Container unten (Schieberegler) */
 
-#quizContainer {
-  display: none;
-  position: absolute;
-  top: 90%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 24px rgba(15, 23, 42, 0.85);
-  z-index: 999;
-  border: 1px solid var(--border);
-}
+
 
 #quizContainer strong {
   font-size: 0.9rem;
