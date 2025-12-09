@@ -1188,12 +1188,25 @@ function exportCanvasAsJpeg() {
   }
 }
 window.addEventListener("resize", () => {
-    const w = renderer.domElement.clientWidth;
-    const h = renderer.domElement.clientHeight;
-    camera.aspect = w / h;
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
+    adjustCameraForMobile();
 });
+
+function adjustCameraForMobile() {
+    const aspect = window.innerWidth / window.innerHeight;
+
+    // Hochformat-Erkennung
+    if (aspect < 0.75) {
+        // Zoom verkleinern = weiter rausfahren
+        camera.zoom = 0.6;  
+    } else {
+        camera.zoom = 1;
+    }
+
+    camera.updateProjectionMatrix();
+}
+adjustCameraForMobile();
 </script>
 
 </body>
