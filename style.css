@@ -453,7 +453,7 @@ canvas {
     position: fixed;
     top: -20vh;
     left: 0;
-    width: 70vw;
+    width: 40vw;
     height: 55vh;       /* oberer Teil des Screens */
     z-index: 0;
   }
