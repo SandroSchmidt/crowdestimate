@@ -451,12 +451,13 @@ canvas {
   /* Canvas nimmt den oberen Bereich ein */
  canvas {
    
-    top: -30vh;
+    top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-}
 
+    transform: translateY(-30vh);
+}
   /* Settings-Panel als Unterkante-Overlay,
      aber im Quiz-Modus blendest du es ja via JS aus */
   #settingsPanel {
