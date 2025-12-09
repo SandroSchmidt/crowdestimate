@@ -544,7 +544,7 @@ width:80vw;
 @media (min-width: 768px) {
     #quizContainer {
       position: fixed;
-    left: 10%;
+  
     bottom: 5vh;     /* leicht vom Rand weg */
     width: 50vw;     /* schön mittig, nicht zu breit */
     background: white;
