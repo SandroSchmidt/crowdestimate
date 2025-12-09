@@ -456,7 +456,7 @@ canvas {
     width: 100vw;
     height: 100vh;
 
-    transform: translateY(-30vh);
+    transform: translateY(-15vh);
 }
   /* Settings-Panel als Unterkante-Overlay,
      aber im Quiz-Modus blendest du es ja via JS aus */
