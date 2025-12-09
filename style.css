@@ -544,17 +544,15 @@ width:80vw;
 @media (min-width: 768px) {
     #quizContainer {
       position: fixed;
-    left: 50%;
+    left: 10%;
     bottom: 5vh;     /* leicht vom Rand weg */
     width: 50vw;     /* schön mittig, nicht zu breit */
-
-
     background: white;
     padding: 16px;
     border-radius: 16px;
     border: 1px solid var(--border);
     z-index: 9999;
-    display: block !important;
+   
   }
 
     canvas {
