@@ -79,69 +79,10 @@
   <span id="logoText" style="font-family: 'MuseoSlab-500', sans-serif; color: black;" >crowdestimate</span>
   <div style="color: white;" id="densityDisplay">people/m²</div>
 
-<div id="settingsPanel">
-  <p><u>Camera Settings:</u></p>
-  <label>Position: <input id="camHeight" type="range" min="1" max="50" step="1" value="10"></label><br>
-  <label>Rotate: <input id="rotateSpeed" type="range" min="0" max="0.001" step="0.0001" value="0.0005"></label><br>
-  <hr>
-  <p><u>Light Settings:</u></p>
-  <button id="btnAmbient" class="btn">Ambient</button>
-  <button id="btnDirectional" class="btn">Directional</button>
-  <button id="btnDisco" class="btn">Disco</button>
-  <button id="toggleArrow" class="btn">Direction</button>
-  <hr>
-   <fieldset>
-  <legend>Obstacle 1:</legend>
-  <button id="toggleObstacle" class="btn">on/off</button>
-  <button id="changeObstacleColor" class="btn">Color</button><br>
-    <label>Size (m): <input id="obstacleSize" type="number" min="1" max="5" step="0.1" value="3"></label><br>
-  <label>Height (m): <input id="obstacleHeight" type="number" min="0.25" max="5" step="0.25" value="1"></label><br>
-  </fieldset>
-  <fieldset>
-  <legend>Obstacle 2:</legend>
-  <button id="toggleObstacle2" class="btn">on/off</button>
-  <button id="changeObstacleColor2" class="btn">Color</button>
-  <div class="row">Size (m): <input id="obstacleSize2" type="number" min="1" max="5" step="0.1" value="2.5"></div>
-  <div class="row">Height (m): <input id="obstacleHeight2" type="number" min="0.25" max="5" step="0.25" value="1"></div>
-  <div class="subtle">Drag the cube to move it.</div>
-</fieldset>
 
-  <hr>
-  <p><u>Agents Settings:</u></p>
-  <label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
-  <button id="toggleStyle" class="btn">Style: Minimal</button>
-  <div class="row">Women %: <input id="percentWomen" type="number" min="0" max="100" step="1" value="50"></div>
-<div class="row">
-  Male model:
-  <select id="maleModel">
-    <!-- Pfade anpassen -->
-    <option value="./crestimate/male4.glb">Male 1</option>
-    <option value="./crestimate/male2.glb">Male 2</option>
-    <option value="./crestimate/male3.glb">Male 3</option>
-        <option value="./crestimate/male1.glb">Male 4</option>
-  </select>
-</div>
-<div class="row">
-  Female model:
-  <select id="femaleModel">
-    <!-- Pfade anpassen -->
-    <option value="./crestimate/female1.glb">Female 1</option>
-    <option value="./crestimate/female2.glb">Female 2</option>
-  </select>
-</div>
-  <hr>
-
-<button id="btnExportJpeg" class="btn">Export View (JPEG)</button>
-  <button id="btnQuiz" class="btn" onclick="startDensityQuiz(1)">Estimate Random Density</button>
-  
-</div>
-
-<div id="sliderContainer">
-  <label>Count: <input id="slider" type="range" min="0" max="250" value="1"></label>
-  <span id="personCountDisplay">1 people</span>
-</div>
-
-<div id="quizContainer" >
+<
+<div id="quizContainer" style="display:none; position:absolute; top:90%; left:50%; transform:translate(-50%,-50%);
+ background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.3); z-index:999;">
   <p style="color:black"><strong>estimate density (people/m²):</strong></p>
   <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(parseFloat(this.value).toFixed(1) + ' p/m²' )">
   <span style="color:black" style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" 
