@@ -542,18 +542,23 @@ width:80vw;
 }
 
 @media (min-width: 768px) {
-    #quizContainer {
-      position: fixed;
-  
-    bottom: 5vh;     /* leicht vom Rand weg */
-    width: 50vw;     /* schön mittig, nicht zu breit */
+  #quizContainer {
+    position: fixed;
+
+    left: 50%;                 /* horizontal zentrieren */
+    bottom: 5vh;
+    transform: translateX(-50%); /* Mitte korrigieren */
+
+    width: 50vw;
+    max-width: 600px;
+
     background: white;
     padding: 16px;
     border-radius: 16px;
     border: 1px solid var(--border);
     z-index: 9999;
-   
   }
+}
 
     canvas {
         transform: none;
