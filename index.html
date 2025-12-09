@@ -1110,6 +1110,10 @@ function showProgressOverlay() {
   'Accuracy: ' + Math.round(multiQuizAccu) + '%';
     el.style.display = "block";
 
+     el.classList.remove("hidden");
+    setTimeout(() => {
+    el.classList.add("hidden");
+  }, 3000);
   
 }
 

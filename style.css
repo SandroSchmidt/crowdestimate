@@ -469,7 +469,7 @@ width:80vw;
     position: fixed;
     top: -20vh;
     left: 0;
-    width: 100vw;
+    width: 70vw;
     height: 55vh;       /* oberer Teil des Screens */
     z-index: 0;
   }
