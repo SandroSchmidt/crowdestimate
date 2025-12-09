@@ -354,6 +354,7 @@ canvas {
   position: fixed;
   top: 10%;
   left: 50%;
+
   transform: translate(-50%, -50%);
   background: rgba(15, 23, 42, 0.98);
   color: var(--text);
@@ -442,7 +443,7 @@ canvas {
   /* Canvas nimmt den oberen Bereich ein */
   canvas {
     position: fixed;
-    top: 0;
+    top: -20vh;
     left: 0;
     width: 100vw;
     height: 55vh;       /* oberer Teil des Screens */
@@ -452,17 +453,7 @@ canvas {
   /* Settings-Panel als Unterkante-Overlay,
      aber im Quiz-Modus blendest du es ja via JS aus */
   #settingsPanel {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: auto;
-    width: 100vw;
-    height: 45vh;       /* unterer Teil, falls sichtbar */
-    border-left: none;
-    border-top: 1px solid var(--border);
-    overflow-y: auto;
-    background: rgba(15, 23, 42, 0.97);
+    display:none;
   }
 
   #densityDisplay {
@@ -490,7 +481,7 @@ canvas {
 
   #logoText {
     top: 5px;
-    left: 20%;
+    left: 0%;
     font-size: 18px;
   }
 
