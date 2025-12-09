@@ -531,16 +531,17 @@ width:80vw;
   /* Quiz-Container sitzt fest am unteren Rand,
      nutzt die volle Breite und bleibt komplett sichtbar */
 #quizContainer {
-  flex: 0 0 auto; /* Höhe = Inhalt */
-  position: relative; 
-  bottom: 10%;
+  position: fixed;
+  left: 0;
+  bottom: 10vh;        /* → im unteren Drittel (10–15vh ist ideal) */
   width: 100vw;
+
   padding: 16px;
   background: #ffffff;
-  border-color: #020617;
-transform: translateY(-15vh);
   border-top: 1px solid var(--border);
   border-radius: 12px 12px 0 0;
+
+  z-index: 999;        /* muss über dem Canvas liegen */
 }
 
   #quizResultsTable {
