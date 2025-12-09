@@ -140,8 +140,8 @@
   <label>Count: <input id="slider" type="range" min="0" max="250" value="1"></label>
   <span id="personCountDisplay">1 people</span>
 </div>
-<div id ="simcontainer"></div> 
-<div id="quizContainer" style="display: block;">
+
+<div id="quizContainer" >
   <p style="color:black"><strong>estimate density (people/m²):</strong></p>
   <input type="range" id="densityGuess" step="0.1" min="0" max="2.5"  oninput="d3.select('#guessrange').text(parseFloat(this.value).toFixed(1) + ' p/m²' )">
   <span style="color:black" style="display:inline-block; width:8ch; text-align:right; white-space:nowrap;" 
@@ -349,20 +349,13 @@ renderer = new THREE.WebGLRenderer({
   preserveDrawingBuffer: true
 });
 
-renderer.setPixelRatio(1);
-
-// Größe anhand des simcontainers
-const sim = document.getElementById("simcontainer");
-const w = sim.clientWidth;
-const h = sim.clientHeight;
-renderer.setSize(w, h);
-
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-// Canvas in den simcontainer hängen
-sim.appendChild(renderer.domElement);
-
+ //renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+ renderer.setPixelRatio(1)
+// if (window.innerWidth < 768) {    renderer.setPixelRatio(1);}
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
 
   directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(20, 15, 20);
@@ -480,7 +473,11 @@ arrowHelper.visible = false;
 
   document.getElementById("btnSubmitGuess").addEventListener("click", submitDensityGuess);
 
-
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
   d3.select("#slider").property("value", 1);
   updatePeople(1);
@@ -1191,16 +1188,10 @@ function exportCanvasAsJpeg() {
   }
 }
 window.addEventListener("resize", () => {
-  const sim = document.getElementById("simcontainer");
-  const w = sim.clientWidth;
-  const h = sim.clientHeight;
-
-  renderer.setSize(w, h);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-  adjustCameraForMobile();
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    adjustCameraForMobile();
 });
-
 
 function adjustCameraForMobile() {
     const aspect = window.innerWidth / window.innerHeight;
