@@ -1206,7 +1206,13 @@ function adjustCameraForMobile() {
 
     camera.updateProjectionMatrix();
 }
-adjustCameraForMobile();
+
+setTimeout(() => {
+  adjustCameraForMobile();
+}, 1000);
+setTimeout(() => {
+  adjustCameraForMobile();
+}, 3000);
 </script>
 
 </body>
