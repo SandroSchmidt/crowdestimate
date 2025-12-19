@@ -525,8 +525,7 @@ loadModel('female', femalePath);
      const trb = document.getElementById("topRightButtons");
   if (trb) trb.remove();
     startDensityQuiz(10); 
-}
-
+}else{d3.select('#quizContainer').style("display","none")}
 if (params.get('results') == 'true') {loadQuizResults()}
 setLightMode("directional")
 }
