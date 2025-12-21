@@ -113,7 +113,7 @@
   <p><u>Agents Settings:</u></p>
   <label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
   <button id="toggleStyle" class="btn">Style: Minimal</button>
-  <div class="row">Men %: <span id="percentMenDisplay">100%</span></div>
+  <div class="row">Men: <span id="percentMenDisplay">100%</span></div>
   <div class="row">Women %: <input id="percentWomen" type="number" min="0" max="100" step="1" value="50"></div>
   <div class="row">Children %: <input id="percentChildren" type="number" min="0" max="100" step="1" value="0"></div>
 
@@ -807,33 +807,71 @@ function updateObstacle(idx = 1) {
 
 /* ------- People ------- */
 function createPersonModel() {
-if (useRealisticHumans && malePrototype && femalePrototype) {
+  if (useRealisticHumans && malePrototype && femalePrototype) {
 
-  const isChild = (Math.random() * 100 < percentChildren);
+    // --- decide child vs adult ---
+    const isChild = (Math.random() * 100 < percentChildren);
 
-if (!isChild) {
-  const adultShare = Math.max(1e-6, 100 - percentChildren);
-  const femaleAmongAdultsPct = (percentWomen / adultShare) * 100; // 0..100
+    // --- CHILD ---
+    if (isChild && childPrototype) {
+      const clone = window.SkeletonUtils.clone(childPrototype);
 
-  const isFemale = (Math.random() * 100 < femaleAmongAdultsPct);
-  const clone = window.SkeletonUtils.clone(childPrototype);
+      const childTargetHeight = 1.20; // m (nur Optik)
+      const heightVar = 1 + (Math.random() * 0.2 - 0.1); // ±10%
+      const scale = childScaleBase * (childTargetHeight / 1.78) * heightVar;
+      clone.scale.setScalar(scale);
 
-    // Zielhöhe für Kinder (konservativ) – beeinflusst NICHT die Dichte, nur die Optik
-    const childTargetHeight = 1.20; // m
+      clone.traverse(obj => {
+        if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = false; }
+      });
+
+      // optional: child idle
+      if (useAnimations && childClips.length && Math.random() < 0.35) {
+        const mixer = new THREE.AnimationMixer(clone);
+        mixers.push(mixer);
+        const idle =
+          THREE.AnimationClip.findByName(childClips, 'Idle') ||
+          THREE.AnimationClip.findByName(childClips, 'idle') ||
+          childClips[0];
+        mixer.clipAction(idle).play();
+        mixer.setTime(Math.random() * 2);
+        clone.userData.mixer = mixer;
+      }
+
+      return clone;
+    }
+
+    // --- ADULT (women % is overall, so convert to women among adults) ---
+    const adultShare = Math.max(1e-6, 100 - percentChildren);
+    const femaleAmongAdultsPct = (percentWomen / adultShare) * 100; // 0..100
+    const isFemale = (Math.random() * 100 < femaleAmongAdultsPct);
+
+    const proto = isFemale ? femalePrototype : malePrototype;
+    const base  = isFemale ? femaleScaleBase : maleScaleBase;
+    const clips = isFemale ? femaleClips : maleClips;
+
+    const clone = window.SkeletonUtils.clone(proto);
+
     const heightVar = 1 + (Math.random() * 0.2 - 0.1); // ±10%
-    const scale = childScaleBase * (childTargetHeight / 1.78) * heightVar;
-
+    const scale = base * (avgPersonHeight / 1.78) * heightVar;
     clone.scale.setScalar(scale);
 
+    const hueJitter = (Math.random() * 0.12 - 0.06);
+    const lightJitter = (Math.random() * 0.08 - 0.04);
     clone.traverse(obj => {
+      if (obj.isMesh && obj.material && obj.material.color) {
+        const c = obj.material.color.clone();
+        if (c.offsetHSL) c.offsetHSL(hueJitter, 0, lightJitter);
+        obj.material = obj.material.clone();
+        obj.material.color.copy(c);
+      }
       if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = false; }
     });
 
-    // optional: Idle animation analog zu Adults
-    if (useAnimations && childClips.length && Math.random() < 0.35) {
+    if (useAnimations && clips.length && Math.random() < 0.35) {
       const mixer = new THREE.AnimationMixer(clone);
       mixers.push(mixer);
-      const idle = THREE.AnimationClip.findByName(childClips, 'Idle') || childClips[0];
+      const idle = THREE.AnimationClip.findByName(clips, 'Idle') || clips[0];
       mixer.clipAction(idle).play();
       mixer.setTime(Math.random() * 2);
       clone.userData.mixer = mixer;
@@ -841,41 +879,6 @@ if (!isChild) {
 
     return clone;
   }
-
-  // sonst Adult wie bisher
-  const isFemale = (Math.random() * 100 < percentWomen);
-  const proto = isFemale ? femalePrototype : malePrototype;
-  const base  = isFemale ? femaleScaleBase : maleScaleBase;
-  const clips = isFemale ? femaleClips : maleClips;
-
-  const clone = window.SkeletonUtils.clone(proto);
-
-  const heightVar = 1 + (Math.random() * 0.2 - 0.1); // ±10%
-  const scale = base * (avgPersonHeight / 1.78) * heightVar;
-  clone.scale.setScalar(scale);
-
-  const hueJitter = (Math.random() * 0.12 - 0.06);
-  const lightJitter = (Math.random() * 0.08 - 0.04);
-  clone.traverse(obj=>{
-    if (obj.isMesh && obj.material && obj.material.color) {
-      const c = obj.material.color.clone();
-      if (c.offsetHSL) c.offsetHSL(hueJitter, 0, lightJitter);
-      obj.material = obj.material.clone();
-      obj.material.color.copy(c);
-    }
-    if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = false; }
-  });
-
-  if (useAnimations && clips.length && Math.random() < 0.35) {
-    const mixer = new THREE.AnimationMixer(clone);
-    mixers.push(mixer);
-    const idle = THREE.AnimationClip.findByName(clips, 'Idle') || clips[0];
-    mixer.clipAction(idle).play();
-    mixer.setTime(Math.random()*2);
-    clone.userData.mixer = mixer;
-  }
-  return clone;
-}
 
   return createPersonModel_Fallback();
 }
@@ -1291,8 +1294,8 @@ function enforceGenderChildMix(changed = null) {
   const wEl = document.getElementById('percentWomen');
   const cEl = document.getElementById('percentChildren');
 
-  let w = parseInt(wEl?.value || '0', 10);
-  let c = parseInt(cEl?.value || '0', 10);
+  let w = parseInt(wEl?.value || 0, 10);
+  let c = parseInt(cEl?.value || 0, 10);
 
   if (!isFinite(w)) w = 0;
   if (!isFinite(c)) c = 0;
