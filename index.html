@@ -86,10 +86,12 @@
   <hr>
   <p><u>Light Settings:</u></p>
   <button id="btnAmbient" class="btn">Ambient</button>
- <!--<button id="btnDirectional" class="btn">Directional</button>
+ <!--<button id="toggleArrow" class="btn">Direction</button>
   
-  --> <button id="btnDisco" class="btn">Disco</button>
-  <button id="toggleArrow" class="btn">Direction</button>
+  -->
+ <button id="btnDirectional" class="btn">Directional</button>
+  
+  <button id="btnDisco" class="btn">Disco</button>
   <hr>
    <fieldset>
   <legend>Obstacle 1:</legend>
@@ -1062,6 +1064,10 @@ function loadModel(kind, path){
          if (kind === 'male' && path.includes("male4.glb")) {
     lowerArms(root);
     }
+
+    
+         if (kind === 'child') {
+    lowerArms(root);}
 
 
 
