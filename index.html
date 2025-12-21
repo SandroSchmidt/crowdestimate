@@ -72,9 +72,9 @@
  
   <button class="btn" id="settingsToggle">Settings</button>
 </div>
-<!--
+
 <img id="logobild" src="./crestimate/seg_logo.jpg" >
--->   
+
 
   <span id="logoText" style="font-family: 'MuseoSlab-500', sans-serif; color: black;" >crowdestimate</span>
   <div style="color: white;" id="densityDisplay">people/m²</div>
@@ -86,8 +86,9 @@
   <hr>
   <p><u>Light Settings:</u></p>
   <button id="btnAmbient" class="btn">Ambient</button>
-  <button id="btnDirectional" class="btn">Directional</button>
-  <button id="btnDisco" class="btn">Disco</button>
+ <!--<button id="btnDirectional" class="btn">Directional</button>
+  
+  --> <button id="btnDisco" class="btn">Disco</button>
   <button id="toggleArrow" class="btn">Direction</button>
   <hr>
    <fieldset>
@@ -111,6 +112,17 @@
   <label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
   <button id="toggleStyle" class="btn">Style: Minimal</button>
   <div class="row">Women %: <input id="percentWomen" type="number" min="0" max="100" step="1" value="50"></div>
+  <div class="row">Children %: <input id="percentChildren" type="number" min="0" max="100" step="1" value="0"></div>
+
+<div class="row">
+  Child model:
+  <select id="childModel">
+    <option value="./crestimate/kind1.glb">Child 1</option>
+    <!-- falls du mehrere hast -->
+    <!-- <option value="./crestimate/child2.glb">Child 2</option> -->
+  </select>
+</div>
+
 <div class="row">
   Male model:
   <select id="maleModel">
@@ -132,7 +144,7 @@
   <hr>
 
 <button id="btnExportJpeg" class="btn">Export View (JPEG)</button>
-  <button id="btnQuiz" class="btn" onclick="startDensityQuiz(1)">Estimate Random Density</button>
+  <button id="btnQuiz" class="btn" onclick="startDensityQuiz(10);autoTestMode = true ">Density Quiz</button>
   
 </div>
 
@@ -202,6 +214,12 @@ let femalePath = './crestimate/female1.glb';
 let malePrototype = null, femalePrototype = null;
 let maleClips = [], femaleClips = [];
 let maleScaleBase = 1, femaleScaleBase = 1;
+let percentChildren = 0;
+
+let childPath = './crestimate/kind1.glb';
+let childPrototype = null;
+let childClips = [];
+let childScaleBase = 1;
 
 // second obstacle
 let obstacleEnabled2 = false;
@@ -309,7 +327,7 @@ function updateStyleButton(){
   const btn = document.getElementById("toggleStyle");
   if (!btn) return;
   btn.textContent = useRealisticHumans ? "Style: Realistic" : "Style: Minimal";
-  btn.style.background = useRealisticHumans ? "#cfc" : "#ccc";
+  //btn.style.background = useRealisticHumans ? "#cfc" : "#ccc";
 }
 function refreshPeople(){
   const keep = lastCount;
@@ -410,7 +428,7 @@ arrowHelper.visible = false;
   window.addEventListener('pointerup', onPointerUp);
 
   document.getElementById("btnAmbient").addEventListener("click", () => setLightMode("ambient"));
-  document.getElementById("btnDirectional").addEventListener("click", () => setLightMode("directional"));
+ // document.getElementById("btnDirectional").addEventListener("click", () => setLightMode("directional"));
   document.getElementById("btnDisco").addEventListener("click", () => setLightMode("disco"));
 
 
@@ -494,6 +512,20 @@ document.getElementById('percentWomen')?.addEventListener('input', e=>{
   percentWomen = Math.max(0, Math.min(100, parseInt(e.target.value||'0',10)));
   refreshPeople();
 });
+// Children % + Child model select
+const childSel = document.getElementById('childModel');
+childPath = childSel?.value || childPath;
+
+childSel?.addEventListener('change', () => {
+  childPath = childSel.value;
+  loadModel('child', childPath);
+});
+
+document.getElementById('percentChildren')?.addEventListener('input', e => {
+  percentChildren = Math.max(0, Math.min(100, parseInt(e.target.value || '0', 10)));
+  refreshPeople();
+});
+
 // Obstacle 2
 document.getElementById("toggleObstacle2").addEventListener("click", ()=>{
   obstacleEnabled2 = !obstacleEnabled2;
@@ -515,6 +547,8 @@ document.getElementById("obstacleHeight2").addEventListener("input", e=>{
 // initiale Modelle laden
 loadModel('male',   malePath);
 loadModel('female', femalePath);
+loadModel('child', childPath);
+
   loadHumanGLB();
   animate();
     const params = new URLSearchParams(window.location.search);
@@ -728,9 +762,9 @@ function setLightMode(mode) {
     discoActive = true;
   }
 
-  document.getElementById("btnAmbient").style.background = mode === "ambient" ? "#ccf" : "#ccc";
-  document.getElementById("btnDirectional").style.background = mode === "directional" ? "#ccf" : "#ccc";
-  document.getElementById("btnDisco").style.background = mode === "disco" ? "#ccf" : "#ccc";
+ // document.getElementById("btnAmbient").style.background = mode === "ambient" ? "#ccf" : "#ccc";
+ // document.getElementById("btnDirectional").style.background = mode === "directional" ? "#ccf" : "#ccc";
+//  document.getElementById("btnDisco").style.background = mode === "disco" ? "#ccf" : "#ccc";
 }
 
 /* ------- Obstacle ------- */
@@ -767,20 +801,50 @@ function updateObstacle(idx = 1) {
 /* ------- People ------- */
 function createPersonModel() {
 if (useRealisticHumans && malePrototype && femalePrototype) {
-  const isFemale = (Math.random()*100 < percentWomen);
+
+  const isChild = (Math.random() * 100 < percentChildren);
+
+  if (isChild && childPrototype) {
+    const clone = window.SkeletonUtils.clone(childPrototype);
+
+    // Zielhöhe für Kinder (konservativ) – beeinflusst NICHT die Dichte, nur die Optik
+    const childTargetHeight = 1.20; // m
+    const heightVar = 1 + (Math.random() * 0.2 - 0.1); // ±10%
+    const scale = childScaleBase * (childTargetHeight / 1.78) * heightVar;
+
+    clone.scale.setScalar(scale);
+
+    clone.traverse(obj => {
+      if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = false; }
+    });
+
+    // optional: Idle animation analog zu Adults
+    if (useAnimations && childClips.length && Math.random() < 0.35) {
+      const mixer = new THREE.AnimationMixer(clone);
+      mixers.push(mixer);
+      const idle = THREE.AnimationClip.findByName(childClips, 'Idle') || childClips[0];
+      mixer.clipAction(idle).play();
+      mixer.setTime(Math.random() * 2);
+      clone.userData.mixer = mixer;
+    }
+
+    return clone;
+  }
+
+  // sonst Adult wie bisher
+  const isFemale = (Math.random() * 100 < percentWomen);
   const proto = isFemale ? femalePrototype : malePrototype;
   const base  = isFemale ? femaleScaleBase : maleScaleBase;
   const clips = isFemale ? femaleClips : maleClips;
 
   const clone = window.SkeletonUtils.clone(proto);
 
-  // identische Größenlogik wie beim Minimal-Modell
-  const heightVar = 1 + (Math.random()*0.2 - 0.1); // ±10%
+  const heightVar = 1 + (Math.random() * 0.2 - 0.1); // ±10%
   const scale = base * (avgPersonHeight / 1.78) * heightVar;
   clone.scale.setScalar(scale);
 
-  const hueJitter = (Math.random()*0.12 - 0.06);
-  const lightJitter = (Math.random()*0.08 - 0.04);
+  const hueJitter = (Math.random() * 0.12 - 0.06);
+  const lightJitter = (Math.random() * 0.08 - 0.04);
   clone.traverse(obj=>{
     if (obj.isMesh && obj.material && obj.material.color) {
       const c = obj.material.color.clone();
@@ -1010,6 +1074,8 @@ function loadModel(kind, path){
 
     if (kind === 'male')  { malePrototype = root;  maleClips = gltf.animations || [];  maleScaleBase = base; }
     if (kind === 'female'){ femalePrototype = root; femaleClips = gltf.animations || []; femaleScaleBase = base; }
+if (kind === 'child')  { childPrototype = root; childClips = gltf.animations || []; childScaleBase = base; }
+
 
     if (useRealisticHumans) refreshPeople();
   }, undefined, (err)=> console.warn(`Failed to load ${kind} model:`, err));
