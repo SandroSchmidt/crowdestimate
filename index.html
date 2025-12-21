@@ -113,6 +113,7 @@
   <p><u>Agents Settings:</u></p>
   <label>Ø Size (m): <input id="avgHeight" type="number" min="1.65" max="1.85" step="0.01" value="1.78"></label><br>
   <button id="toggleStyle" class="btn">Style: Minimal</button>
+  <div class="row">Men %: <span id="percentMenDisplay">100%</span></div>
   <div class="row">Women %: <input id="percentWomen" type="number" min="0" max="100" step="1" value="50"></div>
   <div class="row">Children %: <input id="percentChildren" type="number" min="0" max="100" step="1" value="0"></div>
 
@@ -510,10 +511,19 @@ femalePath = femaleSel?.value || femalePath;
 
 maleSel?.addEventListener('change', ()=>{ malePath = maleSel.value; loadModel('male', malePath); });
 femaleSel?.addEventListener('change', ()=>{ femalePath = femaleSel.value; loadModel('female', femalePath); });
-document.getElementById('percentWomen')?.addEventListener('input', e=>{
-  percentWomen = Math.max(0, Math.min(100, parseInt(e.target.value||'0',10)));
+document.getElementById('percentWomen')?.addEventListener('input', () => {
+  enforceGenderChildMix('women');
   refreshPeople();
 });
+
+document.getElementById('percentChildren')?.addEventListener('input', () => {
+  enforceGenderChildMix('children');
+  refreshPeople();
+});
+
+// Initial einmal korrekt setzen
+enforceGenderChildMix();
+
 // Children % + Child model select
 const childSel = document.getElementById('childModel');
 childPath = childSel?.value || childPath;
@@ -521,11 +531,6 @@ childPath = childSel?.value || childPath;
 childSel?.addEventListener('change', () => {
   childPath = childSel.value;
   loadModel('child', childPath);
-});
-
-document.getElementById('percentChildren')?.addEventListener('input', e => {
-  percentChildren = Math.max(0, Math.min(100, parseInt(e.target.value || '0', 10)));
-  refreshPeople();
 });
 
 // Obstacle 2
@@ -806,8 +811,12 @@ if (useRealisticHumans && malePrototype && femalePrototype) {
 
   const isChild = (Math.random() * 100 < percentChildren);
 
-  if (isChild && childPrototype) {
-    const clone = window.SkeletonUtils.clone(childPrototype);
+if (!isChild) {
+  const adultShare = Math.max(1e-6, 100 - percentChildren);
+  const femaleAmongAdultsPct = (percentWomen / adultShare) * 100; // 0..100
+
+  const isFemale = (Math.random() * 100 < femaleAmongAdultsPct);
+  const clone = window.SkeletonUtils.clone(childPrototype);
 
     // Zielhöhe für Kinder (konservativ) – beeinflusst NICHT die Dichte, nur die Optik
     const childTargetHeight = 1.20; // m
@@ -1278,6 +1287,51 @@ function adjustCameraForMobile() {
     camera.updateProjectionMatrix();
 }
 
+function enforceGenderChildMix(changed = null) {
+  const wEl = document.getElementById('percentWomen');
+  const cEl = document.getElementById('percentChildren');
+
+  let w = parseInt(wEl?.value || '0', 10);
+  let c = parseInt(cEl?.value || '0', 10);
+
+  if (!isFinite(w)) w = 0;
+  if (!isFinite(c)) c = 0;
+
+  // Clamp einzeln
+  w = Math.max(0, Math.min(100, w));
+  c = Math.max(0, Math.min(100, c));
+
+  // Summe clampen – wir reduzieren das Feld, das NICHT geändert wurde
+  if (w + c > 100) {
+    if (changed === 'women') {
+      c = 100 - w;
+    } else if (changed === 'children') {
+      w = 100 - c;
+    } else {
+      // Fallback: children reduzieren
+      c = 100 - w;
+    }
+  }
+
+  percentWomen = w;
+  percentChildren = c;
+
+  if (wEl) wEl.value = w;
+  if (cEl) cEl.value = c;
+
+  // Optional: max-Attribute dynamisch setzen (UI fühlt sich dann „richtig“ an)
+  if (wEl) wEl.max = String(100 - c);
+  if (cEl) cEl.max = String(100 - w);
+
+  // Optional: Men% anzeigen, falls du ein Element dafür anlegst
+  const m = 100 - w - c;
+  const menOut = document.getElementById('percentMenDisplay');
+  if (menOut) menOut.textContent = `${m}%`;
+}
+
+
+
+
 setTimeout(() => {
   adjustCameraForMobile();
 }, 1000);
@@ -1285,6 +1339,8 @@ setTimeout(() => {
   adjustCameraForMobile();
 }, 3000);
 </script>
+
+
 
 </body>
 </html>
